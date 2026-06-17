@@ -23,7 +23,7 @@ function renderOrder(order) {
     <div class="order order--${escapeHtml(order.state)}" data-ref="${escapeHtml(order.order_ref)}">
       <div class="order-name">${escapeHtml(order.order_name)}</div>
       <div class="order-total">£${escapeHtml(order.total)}</div>
-      ${renderLines(order.lines)}
+      ${order.state !== "unpaid" ? renderLines(order.lines) : ""}
       ${collectBtn}
     </div>`;
 }
