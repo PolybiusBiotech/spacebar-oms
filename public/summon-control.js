@@ -12,6 +12,9 @@ let masterGain = null;
 
 const orderAlertEl = document.getElementById("order-alert");
 const orderAlertRefEl = document.getElementById("order-alert-ref");
+const btnIdReject = document.getElementById("btn-id-reject");
+
+let currentOrderRef = null;
 
 function getAudio() {
   if (!audioCtx || audioCtx.state === "closed") {
@@ -60,6 +63,7 @@ function playOrderBeep() {
 
 function showOrderAlert(orderRef, softOnly = false) {
   clearTimeout(orderAlertTimer);
+  currentOrderRef = orderRef;
   orderAlertRefEl.textContent = orderRef;
   orderAlertEl.hidden = false;
   orderAlertEl.classList.toggle("order-alert--soft-only", softOnly);
@@ -70,8 +74,21 @@ function showOrderAlert(orderRef, softOnly = false) {
   void document.body.offsetWidth;
   document.body.classList.add("order-flash");
   document.body.addEventListener("animationend", () => document.body.classList.remove("order-flash"), { once: true });
-  orderAlertTimer = setTimeout(() => { orderAlertEl.hidden = true; }, 5000);
+  orderAlertTimer = setTimeout(() => { orderAlertEl.hidden = true; currentOrderRef = null; }, 5000);
 }
+
+btnIdReject.addEventListener("click", async () => {
+  const ref = currentOrderRef;
+  if (!ref) return;
+  orderAlertEl.hidden = true;
+  currentOrderRef = null;
+  clearTimeout(orderAlertTimer);
+  await fetch(`/api/orders/${encodeURIComponent(ref)}/id-check`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ result: "rejected" })
+  });
+});
 
 function triggerFlash() {
   document.body.classList.remove("help-alert");

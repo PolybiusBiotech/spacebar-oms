@@ -45,6 +45,7 @@ export function loadConfig() {
     pollInterval: intEnv("OMS_POLL_INTERVAL", 5),
     mockMode: boolEnv("OMS_MOCK_MODE", false),
     collectLog: process.env.OMS_COLLECT_LOG ?? "",
+    idCheckLog: process.env.OMS_IDCHECK_LOG ?? "",
     publicDir: path.join(__dirname, "..", "public")
   };
 }

@@ -47,6 +47,17 @@ function logCollect(config, order) {
   }
 }
 
+function logIdCheck(config, orderRef, result) {
+  const entry = { order_ref: orderRef, checked_at: new Date().toISOString(), result };
+  console.log(`[id-check] ${orderRef}: ${result}`);
+  if (!config.idCheckLog) return;
+  try {
+    appendFileSync(config.idCheckLog, JSON.stringify(entry) + "\n", "utf8");
+  } catch (err) {
+    console.error(`[id-check-log] Failed to write to ${config.idCheckLog}: ${err.message}`);
+  }
+}
+
 function broadcastSummon() {
   const data = `data: ${JSON.stringify({ message: summonMessage })}\n\n`;
   for (const res of summonClients) {
@@ -268,8 +279,23 @@ export function createServer(config) {
           const payload = `event: order-loaded\ndata: ${JSON.stringify({ order_ref: orderRef, soft_only: softOnly })}\n\n`;
           for (const client of summonClients) client.write(payload);
           console.log(`[summon] order loaded: ${orderRef}${softOnly ? " (soft-only)" : ""}`);
+          if (softOnly) logIdCheck(config, orderRef, "soft_only_no_check");
         }
         sendJson(res, 200, { ok: true });
+        return;
+      }
+
+      const idCheckMatch = url.pathname.match(/^\/api\/orders\/([^/]+)\/id-check$/);
+      if (idCheckMatch && req.method === "POST") {
+        const ref = decodeURIComponent(idCheckMatch[1]);
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        let body = {};
+        try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch {}
+        const result = body.result === "approved" ? "approved" : "rejected";
+        logIdCheck(config, ref, result);
+        if (result === "rejected") setSummonMessage("REJECTED");
+        sendJson(res, 200, { ok: true, order_ref: ref, result });
         return;
       }
 
