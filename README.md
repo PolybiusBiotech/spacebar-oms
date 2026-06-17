@@ -11,6 +11,33 @@ live state of all kiosk orders — from creation through payment to collection.
 | **Processing** | Order paid at till — being prepared |
 | **Collect** | Operator has marked it ready — displayed for 2 minutes then cleared |
 
+## Screens
+
+| Path | Device | Purpose |
+|---|---|---|
+| `/staff` | Staff tablet | Live order board — pending, processing, collect columns |
+| `/customer` | Customer display | Order collection screen |
+| `/summon` | iPhone at bar | Full-screen message display; "Need help?" button |
+| `/summon/control` | iPad at till | Send preset/custom messages to the summon display |
+
+### Summon system
+
+The summon display shows a message sent by staff over SSE. Default state is
+**PAY HERE** (large green). Other messages appear in purple. All connected
+clients stay in sync — the iPad control page is itself an SSE subscriber and
+reflects the current state.
+
+**Presets:** PAY HERE · PRESENT ID · REJECTED · APPROVED — PAY BELOW ·
+PAYMENT PROCESSED · PLEASE WAIT · NEXT CUSTOMER
+
+**Idle timeout:** non-default messages auto-clear back to PAY HERE after 30
+seconds of inactivity.
+
+**Help button:** the customer taps "Need help?" on the iPhone. This sets
+PLEASE WAIT with no idle timeout and fires a named SSE `help` event to all
+control-page clients, triggering a repeating red flash + triple beep until
+staff acknowledge by pressing any button.
+
 ## Runtime shape
 
 - A dependency-free Node.js server polls tillweb for order state and serves the
@@ -18,6 +45,9 @@ live state of all kiosk orders — from creation through payment to collection.
 - The browser polls the local server every 3 seconds.
 - Operators tap **Ready to collect** on the board to move an order to the collect
   column; it clears automatically after 2 minutes.
+- The server binds to `0.0.0.0` by default so all screens are reachable over the
+  local network. Override with `OMS_LISTEN_HOST=127.0.0.1` to restrict to
+  localhost.
 
 ## Local development
 
