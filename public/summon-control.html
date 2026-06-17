@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Summon Control — Polybius Space Bar</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    #app { max-width: 600px; margin: 0 auto; padding: 1.5rem; }
+
+    h1 { font-size: 1.2rem; color: #aaa; margin-bottom: 1.5rem; }
+
+    .current {
+      background: #1e1e1e;
+      border-radius: 0.5rem;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.85rem;
+      color: #aaa;
+    }
+    .current span {
+      display: block;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #eee;
+      margin-top: 0.25rem;
+      min-height: 1.5rem;
+    }
+
+    .presets {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .preset {
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #eee;
+      cursor: pointer;
+      text-align: center;
+      line-height: 1.3;
+      transition: background 0.1s, border-color 0.1s;
+    }
+    .preset:active { background: #2a2a2a; border-color: #555; }
+    .preset--active { border-color: #BE00FE; color: #BE00FE; }
+    .preset--default { background: #0d2a00; border-color: #7CC142; color: #7CC142; }
+    .preset--default.preset--active { background: #1a4500; border-color: #7CC142; color: #7CC142; }
+
+    .freetext {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .freetext input {
+      flex: 1;
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 0.5rem;
+      padding: 0.75rem 1rem;
+      color: #eee;
+      font-size: 1rem;
+    }
+    .freetext input:focus { outline: none; border-color: #555; }
+
+    .btn-send {
+      background: #BE00FE;
+      color: #fff;
+      border: none;
+      border-radius: 0.5rem;
+      padding: 0.75rem 1.25rem;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-send:active { opacity: 0.85; }
+
+    .btn-clear {
+      width: 100%;
+      background: #2a2a2a;
+      border: 1px solid #555;
+      border-radius: 0.5rem;
+      padding: 0.875rem;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #aaa;
+      cursor: pointer;
+    }
+    .btn-clear:active { background: #333; }
+
+    @keyframes help-flash {
+      0%, 100% { background: #0d0d0d; }
+      30%, 70% { background: #5a0000; }
+      50% { background: #8a0000; }
+    }
+    body.help-alert { animation: help-flash 0.35s ease-in-out 2; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <h1>Summon Control</h1>
+
+    <div class="current">
+      Current message
+      <span id="current-message">—</span>
+    </div>
+
+    <div class="presets">
+      <button class="preset preset--default" data-msg="PAY HERE">PAY HERE</button>
+      <button class="preset" data-msg="PRESENT ID">PRESENT ID</button>
+      <button class="preset" data-msg="REJECTED">REJECTED</button>
+      <button class="preset" data-msg="APPROVED — PAY BELOW">APPROVED — PAY BELOW</button>
+      <button class="preset" data-msg="PAYMENT PROCESSED">PAYMENT PROCESSED</button>
+      <button class="preset" data-msg="PLEASE WAIT">PLEASE WAIT</button>
+      <button class="preset" data-msg="NEXT CUSTOMER">NEXT CUSTOMER</button>
+    </div>
+
+    <div class="freetext">
+      <input id="custom-input" type="text" placeholder="Custom message…" maxlength="200" autocomplete="off">
+      <button class="btn-send" id="btn-send">Send</button>
+    </div>
+
+    <button class="btn-clear" id="btn-clear">Clear display</button>
+  </div>
+  <script src="/summon-control.js"></script>
+</body>
+</html>

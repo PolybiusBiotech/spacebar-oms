@@ -39,7 +39,7 @@ export function loadConfig() {
   return {
     tillwebBaseUrl: (process.env.TILLWEB_BASE_URL ?? "").replace(/\/$/, ""),
     location,
-    listenHost: process.env.OMS_LISTEN_HOST ?? "127.0.0.1",
+    listenHost: process.env.OMS_LISTEN_HOST ?? "0.0.0.0",
     port: intEnv("OMS_PORT", 8081),
     pollInterval: intEnv("OMS_POLL_INTERVAL", 5),
     mockMode: boolEnv("OMS_MOCK_MODE", false),

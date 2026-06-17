@@ -22,6 +22,33 @@ const orderState = new Map();
 // { [location]: { message, at } }
 const printerAlerts = {};
 
+// In-memory summon state.
+const SUMMON_DEFAULT = "PAY HERE";
+let summonMessage = SUMMON_DEFAULT;
+let summonClearTimer = null;
+const summonClients = new Set();
+const SUMMON_IDLE_MS = 30_000;
+
+function broadcastSummon() {
+  const data = `data: ${JSON.stringify({ message: summonMessage })}\n\n`;
+  for (const res of summonClients) {
+    res.write(data);
+  }
+}
+
+function setSummonMessage(msg) {
+  summonMessage = msg || SUMMON_DEFAULT;
+  clearTimeout(summonClearTimer);
+  summonClearTimer = null;
+  if (summonMessage !== SUMMON_DEFAULT) {
+    summonClearTimer = setTimeout(() => {
+      summonMessage = SUMMON_DEFAULT;
+      broadcastSummon();
+    }, SUMMON_IDLE_MS);
+  }
+  broadcastSummon();
+}
+
 function transitionOrder(ref, incoming) {
   const existing = orderState.get(ref);
 
@@ -181,12 +208,49 @@ export function createServer(config) {
         return;
       }
 
-      // Clean URLs for the two OMS screens
-      if (url.pathname === "/customer") {
-        url.pathname = "/customer.html";
-      } else if (url.pathname === "/staff") {
-        url.pathname = "/staff.html";
+      if (url.pathname === "/summon/events" && req.method === "GET") {
+        res.writeHead(200, {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+          "X-Accel-Buffering": "no"
+        });
+        res.write(`data: ${JSON.stringify({ message: summonMessage })}\n\n`);
+        summonClients.add(res);
+        req.on("close", () => summonClients.delete(res));
+        return;
       }
+
+      if (url.pathname === "/summon/help" && req.method === "POST") {
+        clearTimeout(summonClearTimer);
+        summonClearTimer = null;
+        summonMessage = "PLEASE WAIT";
+        broadcastSummon();
+        const helpAlert = `event: help\ndata: {}\n\n`;
+        for (const client of summonClients) client.write(helpAlert);
+        sendJson(res, 200, { ok: true });
+        return;
+      }
+
+      if (url.pathname === "/summon/message" && req.method === "POST") {
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        let body = {};
+        try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch {}
+        setSummonMessage(String(body.message ?? "").slice(0, 200));
+        sendJson(res, 200, { ok: true, message: summonMessage });
+        return;
+      }
+
+      if (url.pathname === "/summon/clear" && req.method === "POST") {
+        setSummonMessage("");
+        sendJson(res, 200, { ok: true });
+        return;
+      }
+
+      // Clean URLs for the OMS screens
+      const rewrites = { "/customer": "/customer.html", "/staff": "/staff.html", "/summon": "/summon.html", "/summon/control": "/summon-control.html" };
+      if (rewrites[url.pathname]) req.url = rewrites[url.pathname];
 
       if (req.method === "GET" || req.method === "HEAD") {
         await serveStatic(config, req, res);

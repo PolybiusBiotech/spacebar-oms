@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Polybius Space Bar</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    body {
+      background: #000F00;
+      overflow: hidden;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #summon-display {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    #message-wrap {
+      text-align: center;
+    }
+
+    #message {
+      font-size: clamp(2.5rem, 10vw, 6rem);
+      font-weight: 700;
+      text-align: center;
+      color: #BE00FE;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      line-height: 1.1;
+      transition: opacity 0.2s;
+    }
+
+    #message.pay-here {
+      color: #7CC142;
+      font-size: clamp(4rem, 18vw, 10rem);
+    }
+
+    #subtitle {
+      display: none;
+      margin-top: 1rem;
+      font-size: clamp(1rem, 4vw, 1.75rem);
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #2d6b1a;
+    }
+
+    #subtitle.visible {
+      display: block;
+    }
+
+    #help-btn {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: transparent;
+      border: 2px solid #1a4a0a;
+      border-radius: 2rem;
+      padding: 0.6rem 1.75rem;
+      color: #2d6b1a;
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    #help-btn:active {
+      background: #0d2a00;
+      border-color: #7CC142;
+      color: #7CC142;
+    }
+  </style>
+</head>
+<body>
+  <div id="summon-display">
+    <div id="message-wrap">
+      <div id="message" class="pay-here">PAY HERE</div>
+      <div id="subtitle" class="visible">Scan order slip</div>
+    </div>
+  </div>
+  <button id="help-btn">Need help?</button>
+  <script src="/summon.js"></script>
+</body>
+</html>

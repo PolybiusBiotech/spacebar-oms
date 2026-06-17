@@ -1,0 +1,113 @@
+const currentEl = document.getElementById("current-message");
+const customInput = document.getElementById("custom-input");
+const btnSend = document.getElementById("btn-send");
+const btnClear = document.getElementById("btn-clear");
+
+// --- SSE: keep current message in sync ---
+
+let helpAlertTimer = null;
+let audioCtx = null;
+let masterGain = null;
+
+function getAudio() {
+  if (!audioCtx || audioCtx.state === "closed") {
+    audioCtx = new AudioContext();
+    masterGain = audioCtx.createGain();
+    masterGain.connect(audioCtx.destination);
+  }
+  return { ctx: audioCtx, master: masterGain };
+}
+
+function playHelpBeep() {
+  try {
+    const { ctx, master } = getAudio();
+    master.gain.setValueAtTime(1, ctx.currentTime);
+    [0, 0.18, 0.36].forEach(offset => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(master);
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.6, ctx.currentTime + offset);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.15);
+      osc.start(ctx.currentTime + offset);
+      osc.stop(ctx.currentTime + offset + 0.15);
+    });
+  } catch {}
+}
+
+function triggerFlash() {
+  document.body.classList.remove("help-alert");
+  void document.body.offsetWidth;
+  document.body.classList.add("help-alert");
+  document.body.addEventListener("animationend", () => {
+    document.body.classList.remove("help-alert");
+  }, { once: true });
+}
+
+function startHelpAlert() {
+  stopHelpAlert();
+  playHelpBeep();
+  triggerFlash();
+  helpAlertTimer = setInterval(() => {
+    playHelpBeep();
+    triggerFlash();
+  }, 2500);
+}
+
+function stopHelpAlert() {
+  clearInterval(helpAlertTimer);
+  helpAlertTimer = null;
+  document.body.classList.remove("help-alert");
+  if (masterGain) {
+    masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+    masterGain.gain.value = 0;
+  }
+}
+
+// Any staff action acknowledges the alert
+document.addEventListener("click", e => {
+  if (helpAlertTimer && e.target.closest("button, input")) stopHelpAlert();
+}, { capture: true });
+
+function connect() {
+  const es = new EventSource("/summon/events");
+  es.onmessage = e => {
+    const { message } = JSON.parse(e.data);
+    currentEl.textContent = message || "—";
+    document.querySelectorAll(".preset").forEach(b => {
+      b.classList.toggle("preset--active", b.dataset.msg === message);
+    });
+  };
+  es.addEventListener("help", startHelpAlert);
+  es.onerror = () => { es.close(); setTimeout(connect, 3000); };
+}
+
+connect();
+
+// --- Send message ---
+
+async function sendMessage(msg) {
+  await fetch("/summon/message", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: msg })
+  });
+}
+
+document.querySelectorAll(".preset").forEach(btn => {
+  btn.addEventListener("click", () => sendMessage(btn.dataset.msg));
+});
+
+btnSend.addEventListener("click", () => {
+  const msg = customInput.value.trim();
+  if (msg) { sendMessage(msg); customInput.value = ""; }
+});
+
+customInput.addEventListener("keydown", e => {
+  if (e.key === "Enter") btnSend.click();
+});
+
+btnClear.addEventListener("click", () => {
+  sendMessage("PAY HERE");
+});
