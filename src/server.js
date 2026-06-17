@@ -28,7 +28,7 @@ function transitionOrder(ref, incoming) {
   if (!existing) {
     orderState.set(ref, {
       ...incoming,
-      state: incoming.paid ? "processing" : "pending",
+      state: incoming.paid ? "processing" : "unpaid",
       collectAt: null
     });
     return;
@@ -38,7 +38,7 @@ function transitionOrder(ref, incoming) {
     return;
   }
 
-  if (incoming.paid && existing.state === "pending") {
+  if (incoming.paid && existing.state === "unpaid") {
     orderState.set(ref, { ...existing, ...incoming, state: "processing" });
     return;
   }

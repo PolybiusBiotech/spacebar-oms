@@ -12,12 +12,12 @@ async function refresh() {
     const data = await res.json();
     const orders = data.orders ?? [];
 
-    const byState = { pending: [], processing: [], collect: [] };
+    const byState = { unpaid: [], processing: [], collect: [] };
     for (const o of orders) {
       if (byState[o.state]) byState[o.state].push(o);
     }
 
-    pending.innerHTML = byState.pending.map(o =>
+    pending.innerHTML = byState.unpaid.map(o =>
       `<div class="order-name">${escapeHtml(o.order_name)}</div>`).join("") || "";
     paying.innerHTML  = byState.processing.map(o =>
       `<div class="order-name">${escapeHtml(o.order_name)}</div>`).join("") || "";

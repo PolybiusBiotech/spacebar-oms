@@ -63,12 +63,12 @@ async function refresh() {
 
     errorEl.innerHTML = "";
 
-    const byState = { pending: [], processing: [], collect: [] };
+    const byState = { unpaid: [], processing: [], collect: [] };
     for (const o of orders) {
       if (byState[o.state]) byState[o.state].push(o);
     }
 
-    pendingEl.innerHTML = byState.pending.map(renderOrder).join("") || "<p>None</p>";
+    pendingEl.innerHTML = byState.unpaid.map(renderOrder).join("") || "<p>None</p>";
     payingEl.innerHTML  = byState.processing.map(renderOrder).join("") || "<p>None</p>";
     collectEl.innerHTML = byState.collect.map(renderOrder).join("") || "<p>None</p>";
   } catch (err) {
