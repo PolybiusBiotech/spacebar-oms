@@ -86,16 +86,32 @@ function pruneOrders(liveRefs) {
   }
 }
 
-async function poll(config) {
-  try {
-    const orders = await fetchOrders(config);
-    const liveRefs = new Set(orders.map(o => o.order_ref));
-    for (const order of orders) {
-      transitionOrder(order.order_ref, order);
+async function pollLoop(config) {
+  const baseMs = config.pollInterval * 1000;
+  const maxMs = 60_000;
+  let delayMs = 0;
+  let firstPoll = true;
+
+  while (true) {
+    if (delayMs > 0) await new Promise(r => setTimeout(r, delayMs));
+    try {
+      const orders = await fetchOrders(config);
+      const liveRefs = new Set(orders.map(o => o.order_ref));
+      for (const order of orders) transitionOrder(order.order_ref, order);
+      pruneOrders(liveRefs);
+      if (firstPoll) {
+        console.log(`[poll] Cold-start: ${orders.length} order(s) loaded from till.`);
+      } else if (delayMs > baseMs) {
+        console.log("[poll] Reconnected to till.");
+      }
+      firstPoll = false;
+      delayMs = baseMs;
+    } catch (error) {
+      const nextDelay = delayMs === 0 ? baseMs : Math.min(delayMs * 2, maxMs);
+      console.error(`[poll] ${error.message} — retrying in ${Math.round(nextDelay / 1000)}s`);
+      delayMs = nextDelay;
+      firstPoll = false;
     }
-    pruneOrders(liveRefs);
-  } catch (error) {
-    console.error(`[poll] ${error.message}`);
   }
 }
 
@@ -289,8 +305,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   server.listen(config.port, config.listenHost, () => {
     console.log(`Spacebar OMS listening on http://${config.listenHost}:${config.port}`);
     if (!config.mockMode) {
-      poll(config);
-      setInterval(() => poll(config), config.pollInterval * 1000);
+      pollLoop(config);
     }
   });
 }
