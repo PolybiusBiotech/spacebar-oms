@@ -44,7 +44,7 @@ function playOrderBeep() {
   try {
     const { ctx, master } = getAudio();
     master.gain.setValueAtTime(1, ctx.currentTime);
-    [[440, 0], [660, 0.14]].forEach(([freq, offset]) => {
+    [[440, 0], [660, 0.14], [440, 0.4], [660, 0.54], [440, 0.8], [660, 0.94]].forEach(([freq, offset]) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
