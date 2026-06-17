@@ -6,40 +6,47 @@
     <title>Space Bar — Staff</title>
     <!-- TODO LUKE: styles -->
     <style>
-      /* bare-bones layout — replace entirely */
       * { box-sizing: border-box; margin: 0; padding: 0; }
-      body { font-family: sans-serif; background: #111; color: #eee; padding: 1rem; }
-      .printer-alert { background: #800; color: #fff; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
+      body { font-family: sans-serif; background: #111; color: #eee; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+      #alerts, #error { flex-shrink: 0; padding: 0 1rem; }
+      .printer-alert { background: #800; color: #fff; padding: 0.75rem 1rem; margin-top: 0.5rem; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
       .printer-alert button { background: #fff; color: #800; border: none; padding: 0.25rem 0.75rem; cursor: pointer; border-radius: 3px; }
-      .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-      .col h2 { font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #444; padding-bottom: 0.5rem; margin-bottom: 0.75rem; }
-      .order { border: 1px solid #333; border-radius: 4px; padding: 0.75rem; margin-bottom: 0.75rem; }
-      .order-name { font-size: 1.4rem; font-weight: bold; margin-bottom: 0.25rem; }
-      .order-total { color: #aaa; font-size: 0.9rem; margin-bottom: 0.5rem; }
+      .board { display: grid; grid-template-columns: repeat(3, 1fr); flex: 1; min-height: 0; }
+      .col { display: flex; flex-direction: column; min-height: 0; border-right: 2px solid #2a2a2a; }
+      .col:last-child { border-right: none; }
+      .col-header { font-size: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; padding: 0.75rem 1rem; border-bottom: 2px solid #2a2a2a; flex-shrink: 0; }
+      .col--unpaid  .col-header { color: #aaa; border-bottom-color: #444; }
+      .col--paying  .col-header { color: #fc0; border-bottom-color: #554400; }
+      .col--collect .col-header { color: #4d4; border-bottom-color: #1a4d1a; }
+      .col-body { overflow-y: auto; flex: 1; padding: 0.75rem; }
+      .order { border: 1px solid #2c2c2c; border-radius: 4px; padding: 0.75rem; margin-bottom: 0.6rem; }
+      .order-name { font-size: 1.4rem; font-weight: bold; margin-bottom: 0.2rem; }
+      .order-total { color: #aaa; font-size: 0.9rem; margin-bottom: 0.4rem; }
       .order-lines { font-size: 0.85rem; color: #bbb; margin-bottom: 0.75rem; }
       .order-lines li { margin-left: 1rem; }
       .collect-btn { background: #060; color: #fff; border: none; padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer; border-radius: 3px; width: 100%; }
-      .collect-btn:disabled { opacity: 0.5; }
-      .order--collect { border-color: #060; opacity: 0.6; }
-      .order--collect .order-name { color: #0a0; }
-      .error-banner { background: #500; color: #fff; padding: 0.5rem 1rem; margin-bottom: 1rem; }
+      .collect-btn:hover { background: #080; }
+      .collect-btn:disabled { opacity: 0.5; cursor: default; }
+      .order--collect { border-color: #1a4d1a; opacity: 0.6; }
+      .order--collect .order-name { color: #4d4; }
+      .error-banner { background: #500; color: #fff; padding: 0.5rem 1rem; margin-top: 0.5rem; }
     </style>
   </head>
   <body>
     <div id="alerts"></div>
     <div id="error"></div>
     <div class="board">
-      <div class="col">
-        <h2>Unpaid</h2>
-        <div id="pending"></div>
+      <div class="col col--unpaid">
+        <div class="col-header">Unpaid</div>
+        <div class="col-body" id="pending"></div>
       </div>
-      <div class="col">
-        <h2>Paying</h2>
-        <div id="paying"></div>
+      <div class="col col--paying">
+        <div class="col-header">Paying</div>
+        <div class="col-body" id="paying"></div>
       </div>
-      <div class="col">
-        <h2>Collect</h2>
-        <div id="collect"></div>
+      <div class="col col--collect">
+        <div class="col-header">Collect</div>
+        <div class="col-body" id="collect"></div>
       </div>
     </div>
     <script src="/staff.js"></script>
