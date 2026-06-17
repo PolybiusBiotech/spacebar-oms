@@ -65,7 +65,7 @@ function showOrderAlert(orderRef, softOnly = false) {
   orderAlertEl.classList.toggle("order-alert--soft-only", softOnly);
   const labelEl = orderAlertEl.querySelector(".order-alert-label");
   if (labelEl) labelEl.textContent = softOnly ? "Soft-only — auto pay" : "Order loaded";
-  playOrderBeep();
+  if (!softOnly) playOrderBeep();
   document.body.classList.remove("order-flash");
   void document.body.offsetWidth;
   document.body.classList.add("order-flash");

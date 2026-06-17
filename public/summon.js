@@ -18,7 +18,7 @@ function showOrderLoaded(orderRef, softOnly = false) {
   clearTimeout(orderLoadedTimer);
   messageEl.textContent = orderRef;
   messageEl.className = softOnly ? "order-loaded soft-only" : "order-loaded";
-  subtitleEl.textContent = softOnly ? "TAP TO PAY" : "PLEASE WAIT";
+  subtitleEl.textContent = softOnly ? "PAY BELOW" : "PLEASE WAIT";
   subtitleEl.classList.add("visible");
   subtitleEl.classList.toggle("soft-only", softOnly);
   const flashClass = softOnly ? "order-flash-soft" : "order-flash";
