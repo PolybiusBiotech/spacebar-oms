@@ -273,10 +273,7 @@ export function createServer(config) {
       }
 
       if (url.pathname === "/summon/help" && req.method === "POST") {
-        clearTimeout(summonClearTimer);
-        summonClearTimer = null;
-        summonMessage = "PLEASE WAIT";
-        broadcastSummon();
+        setSummonMessage("PLEASE WAIT");
         const helpAlert = `event: help\ndata: {}\n\n`;
         for (const client of summonClients) client.write(helpAlert);
         sendJson(res, 200, { ok: true });
@@ -343,4 +340,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       pollLoop(config);
     }
   });
+
+  setInterval(() => {
+    for (const client of summonClients) {
+      try { client.write(": ping\n\n"); } catch { summonClients.delete(client); }
+    }
+  }, 25_000);
 }

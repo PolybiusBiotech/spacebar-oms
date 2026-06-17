@@ -14,6 +14,7 @@ async function tillwebFetch(config, path, options = {}) {
       ...options,
       headers: {
         Accept: "application/json",
+        ...(config.tillwebToken ? { Authorization: `Bearer ${config.tillwebToken}` } : {}),
         ...(options.body ? { "Content-Type": "application/json" } : {}),
         ...options.headers
       }

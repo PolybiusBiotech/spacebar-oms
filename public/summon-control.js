@@ -107,16 +107,20 @@ document.addEventListener("click", e => {
 function connect() {
   const es = new EventSource("/summon/events");
   es.onmessage = e => {
-    const { message } = JSON.parse(e.data);
-    currentEl.textContent = message || "—";
-    document.querySelectorAll(".preset").forEach(b => {
-      b.classList.toggle("preset--active", b.dataset.msg === message);
-    });
+    try {
+      const { message } = JSON.parse(e.data);
+      currentEl.textContent = message || "—";
+      document.querySelectorAll(".preset").forEach(b => {
+        b.classList.toggle("preset--active", b.dataset.msg === message);
+      });
+    } catch {}
   };
   es.addEventListener("help", startHelpAlert);
   es.addEventListener("order-loaded", e => {
-    const { order_ref } = JSON.parse(e.data);
-    showOrderAlert(order_ref);
+    try {
+      const { order_ref } = JSON.parse(e.data);
+      showOrderAlert(order_ref);
+    } catch {}
   });
   es.onerror = () => { es.close(); setTimeout(connect, 3000); };
 }

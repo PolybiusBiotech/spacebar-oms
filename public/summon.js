@@ -33,14 +33,18 @@ function connect() {
   const es = new EventSource("/summon/events");
 
   es.onmessage = e => {
-    const { message } = JSON.parse(e.data);
-    currentMessage = message || "PAY HERE";
-    if (!orderLoadedTimer) applyMessage(currentMessage);
+    try {
+      const { message } = JSON.parse(e.data);
+      currentMessage = message || "PAY HERE";
+      if (!orderLoadedTimer) applyMessage(currentMessage);
+    } catch {}
   };
 
   es.addEventListener("order-loaded", e => {
-    const { order_ref } = JSON.parse(e.data);
-    showOrderLoaded(order_ref);
+    try {
+      const { order_ref } = JSON.parse(e.data);
+      showOrderLoaded(order_ref);
+    } catch {}
   });
 
   es.onerror = () => {
