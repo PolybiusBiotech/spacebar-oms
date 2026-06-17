@@ -257,6 +257,21 @@ export function createServer(config) {
         return;
       }
 
+      if (url.pathname === "/summon/order-loaded" && req.method === "POST") {
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        let body = {};
+        try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch {}
+        const orderRef = String(body.order_ref ?? "").slice(0, 40);
+        if (orderRef) {
+          const payload = `event: order-loaded\ndata: ${JSON.stringify({ order_ref: orderRef })}\n\n`;
+          for (const client of summonClients) client.write(payload);
+          console.log(`[summon] order loaded: ${orderRef}`);
+        }
+        sendJson(res, 200, { ok: true });
+        return;
+      }
+
       if (url.pathname === "/summon/help" && req.method === "POST") {
         clearTimeout(summonClearTimer);
         summonClearTimer = null;

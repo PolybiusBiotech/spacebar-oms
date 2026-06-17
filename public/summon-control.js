@@ -6,8 +6,12 @@ const btnClear = document.getElementById("btn-clear");
 // --- SSE: keep current message in sync ---
 
 let helpAlertTimer = null;
+let orderAlertTimer = null;
 let audioCtx = null;
 let masterGain = null;
+
+const orderAlertEl = document.getElementById("order-alert");
+const orderAlertRefEl = document.getElementById("order-alert-ref");
 
 function getAudio() {
   if (!audioCtx || audioCtx.state === "closed") {
@@ -34,6 +38,36 @@ function playHelpBeep() {
       osc.stop(ctx.currentTime + offset + 0.15);
     });
   } catch {}
+}
+
+function playOrderBeep() {
+  try {
+    const { ctx, master } = getAudio();
+    master.gain.setValueAtTime(1, ctx.currentTime);
+    [[440, 0], [660, 0.14]].forEach(([freq, offset]) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(master);
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.45, ctx.currentTime + offset);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.12);
+      osc.start(ctx.currentTime + offset);
+      osc.stop(ctx.currentTime + offset + 0.12);
+    });
+  } catch {}
+}
+
+function showOrderAlert(orderRef) {
+  clearTimeout(orderAlertTimer);
+  orderAlertRefEl.textContent = orderRef;
+  orderAlertEl.hidden = false;
+  playOrderBeep();
+  document.body.classList.remove("order-flash");
+  void document.body.offsetWidth;
+  document.body.classList.add("order-flash");
+  document.body.addEventListener("animationend", () => document.body.classList.remove("order-flash"), { once: true });
+  orderAlertTimer = setTimeout(() => { orderAlertEl.hidden = true; }, 5000);
 }
 
 function triggerFlash() {
@@ -80,6 +114,10 @@ function connect() {
     });
   };
   es.addEventListener("help", startHelpAlert);
+  es.addEventListener("order-loaded", e => {
+    const { order_ref } = JSON.parse(e.data);
+    showOrderAlert(order_ref);
+  });
   es.onerror = () => { es.close(); setTimeout(connect, 3000); };
 }
 
