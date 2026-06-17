@@ -43,6 +43,7 @@ export function loadConfig() {
     port: intEnv("OMS_PORT", 8081),
     pollInterval: intEnv("OMS_POLL_INTERVAL", 5),
     mockMode: boolEnv("OMS_MOCK_MODE", false),
+    collectLog: process.env.OMS_COLLECT_LOG ?? "",
     publicDir: path.join(__dirname, "..", "public")
   };
 }

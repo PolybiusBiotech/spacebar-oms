@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import http from "node:http";
+import { appendFileSync } from "node:fs";
 import path from "node:path";
 
 import { loadConfig, validateRuntimeConfig } from "./config.js";
@@ -28,6 +29,23 @@ let summonMessage = SUMMON_DEFAULT;
 let summonClearTimer = null;
 const summonClients = new Set();
 const SUMMON_IDLE_MS = 30_000;
+
+function logCollect(config, order) {
+  if (!config.collectLog) return;
+  const entry = {
+    collected_at: new Date().toISOString(),
+    order_ref: order.order_ref,
+    order_name: order.order_name,
+    total: order.total,
+    created_at: order.created_at,
+    lines: order.lines ?? []
+  };
+  try {
+    appendFileSync(config.collectLog, JSON.stringify(entry) + "\n", "utf8");
+  } catch (err) {
+    console.error(`[collect-log] Failed to write to ${config.collectLog}: ${err.message}`);
+  }
+}
 
 function broadcastSummon() {
   const data = `data: ${JSON.stringify({ message: summonMessage })}\n\n`;
@@ -219,7 +237,9 @@ export function createServer(config) {
           sendJson(res, 409, { error: "wrong-state", message: `Order is ${order.state}, not processing.` });
           return;
         }
-        orderState.set(ref, { ...order, state: "collect", collectAt: Date.now() });
+        const collected = { ...order, state: "collect", collectAt: Date.now() };
+        orderState.set(ref, collected);
+        logCollect(config, collected);
         sendJson(res, 200, { order_ref: ref, state: "collect" });
         return;
       }
