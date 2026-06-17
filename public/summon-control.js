@@ -58,10 +58,13 @@ function playOrderBeep() {
   } catch {}
 }
 
-function showOrderAlert(orderRef) {
+function showOrderAlert(orderRef, softOnly = false) {
   clearTimeout(orderAlertTimer);
   orderAlertRefEl.textContent = orderRef;
   orderAlertEl.hidden = false;
+  orderAlertEl.classList.toggle("order-alert--soft-only", softOnly);
+  const labelEl = orderAlertEl.querySelector(".order-alert-label");
+  if (labelEl) labelEl.textContent = softOnly ? "Soft-only — auto pay" : "Order loaded";
   playOrderBeep();
   document.body.classList.remove("order-flash");
   void document.body.offsetWidth;
@@ -118,8 +121,8 @@ function connect() {
   es.addEventListener("help", startHelpAlert);
   es.addEventListener("order-loaded", e => {
     try {
-      const { order_ref } = JSON.parse(e.data);
-      showOrderAlert(order_ref);
+      const { order_ref, soft_only } = JSON.parse(e.data);
+      showOrderAlert(order_ref, soft_only);
     } catch {}
   });
   es.onerror = () => { es.close(); setTimeout(connect, 3000); };

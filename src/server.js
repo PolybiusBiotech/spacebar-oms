@@ -263,10 +263,11 @@ export function createServer(config) {
         let body = {};
         try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch {}
         const orderRef = String(body.order_ref ?? "").slice(0, 40);
+        const softOnly = Boolean(body.soft_only);
         if (orderRef) {
-          const payload = `event: order-loaded\ndata: ${JSON.stringify({ order_ref: orderRef })}\n\n`;
+          const payload = `event: order-loaded\ndata: ${JSON.stringify({ order_ref: orderRef, soft_only: softOnly })}\n\n`;
           for (const client of summonClients) client.write(payload);
-          console.log(`[summon] order loaded: ${orderRef}`);
+          console.log(`[summon] order loaded: ${orderRef}${softOnly ? " (soft-only)" : ""}`);
         }
         sendJson(res, 200, { ok: true });
         return;
