@@ -181,6 +181,13 @@ export function createServer(config) {
         return;
       }
 
+      // Clean URLs for the two OMS screens
+      if (url.pathname === "/customer") {
+        url.pathname = "/customer.html";
+      } else if (url.pathname === "/staff") {
+        url.pathname = "/staff.html";
+      }
+
       if (req.method === "GET" || req.method === "HEAD") {
         await serveStatic(config, req, res);
         return;

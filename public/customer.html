@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Space Bar — Orders</title>
+    <!-- TODO LUKE: styles -->
+    <style>
+      /* bare-bones layout — replace entirely */
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: sans-serif; background: #000; color: #fff; height: 100dvh; display: flex; flex-direction: column; }
+      .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; flex: 1; padding: 1rem; }
+      .col h2 { font-size: 1.5rem; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 2px solid currentColor; padding-bottom: 0.5rem; margin-bottom: 1rem; }
+      .col--pending  h2 { color: #aaa; }
+      .col--paying   h2 { color: #ff0; }
+      .col--collect  h2 { color: #0f0; }
+      .order-name { font-size: 3rem; font-weight: bold; margin-bottom: 0.5rem; }
+      .col--pending  .order-name { color: #aaa; }
+      .col--paying   .order-name { color: #ff0; }
+      .col--collect  .order-name { color: #0f0; }
+      .error { color: #f44; padding: 2rem; font-size: 1.5rem; }
+    </style>
+  </head>
+  <body>
+    <div class="board" id="board">
+      <div class="col col--pending">
+        <h2>Ordering</h2>
+        <div id="pending"></div>
+      </div>
+      <div class="col col--paying">
+        <h2>Paying</h2>
+        <div id="paying"></div>
+      </div>
+      <div class="col col--collect">
+        <h2>Collect</h2>
+        <div id="collect"></div>
+      </div>
+    </div>
+    <script src="/customer.js"></script>
+  </body>
+</html>
