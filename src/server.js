@@ -18,6 +18,10 @@ const COLLECT_TIMEOUT_MS = 2 * 60 * 1000;
 // Map<order_ref, { ...tillwebFields, state: 'pending'|'processing'|'collect', collectAt: number|null }>
 const orderState = new Map();
 
+// In-memory printer alerts from kiosks. Keyed by location, last alert wins.
+// { [location]: { message, at } }
+const printerAlerts = {};
+
 function transitionOrder(ref, incoming) {
   const existing = orderState.get(ref);
 
@@ -70,8 +74,8 @@ async function poll(config) {
 
 function mockOrders() {
   return [
-    { order_ref: "AA1111", order_name: "Kiosk AA1111", total: "5.60", paid: false, lines: [], created_at: new Date().toISOString() },
-    { order_ref: "BB2222", order_name: "Kiosk BB2222", total: "8.40", paid: true,  lines: [], created_at: new Date().toISOString() }
+    { order_ref: "AA1111", order_name: "SB AA1111", total: "5.60", paid: false, lines: [], created_at: new Date().toISOString() },
+    { order_ref: "BB2222", order_name: "SB BB2222", total: "8.40", paid: true,  lines: [], created_at: new Date().toISOString() }
   ];
 }
 
@@ -119,7 +123,30 @@ export function createServer(config) {
 
     try {
       if (url.pathname === "/healthz") {
-        sendJson(res, 200, { ok: true, location: config.location });
+        sendJson(res, 200, { ok: true, location: config.location, printer_alerts: printerAlerts });
+        return;
+      }
+
+      if (url.pathname === "/api/printer-alert" && req.method === "POST") {
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        let body = {};
+        try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch {}
+        const location = body.location || "unknown";
+        printerAlerts[location] = { message: body.message || "Printer error", at: body.at || new Date().toISOString() };
+        console.warn(`[printer-alert] ${location}: ${printerAlerts[location].message}`);
+        sendJson(res, 200, { ok: true });
+        return;
+      }
+
+      if (url.pathname === "/api/printer-alert" && req.method === "DELETE") {
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        let body = {};
+        try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch {}
+        if (body.location) delete printerAlerts[body.location];
+        else Object.keys(printerAlerts).forEach(k => delete printerAlerts[k]);
+        sendJson(res, 200, { ok: true });
         return;
       }
 
@@ -132,7 +159,7 @@ export function createServer(config) {
           created_at: o.created_at,
           state: o.state
         }));
-        sendJson(res, 200, { orders });
+        sendJson(res, 200, { orders, printer_alerts: printerAlerts });
         return;
       }
 
