@@ -158,7 +158,16 @@ async function sendMessage(msg) {
 }
 
 document.querySelectorAll(".preset").forEach(btn => {
-  btn.addEventListener("click", () => sendMessage(btn.dataset.msg));
+  btn.addEventListener("click", () => {
+    sendMessage(btn.dataset.msg);
+    if (btn.dataset.msg === "PRESENT ID" && currentOrderRef) {
+      fetch(`/api/orders/${encodeURIComponent(currentOrderRef)}/id-check`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ result: "id_requested" })
+      });
+    }
+  });
 });
 
 btnSend.addEventListener("click", () => {
