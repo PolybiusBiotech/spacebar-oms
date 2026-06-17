@@ -35,10 +35,9 @@ function intEnv(name, fallback) {
 
 export function loadConfig() {
   loadDotEnv();
-  const location = process.env.OMS_LOCATION ?? "Kiosk";
+  const location = process.env.OMS_LOCATION ?? "spacebar";
   return {
     tillwebBaseUrl: (process.env.TILLWEB_BASE_URL ?? "").replace(/\/$/, ""),
-    omsToken: process.env.TILLWEB_OMS_TOKEN ?? "",
     location,
     listenHost: process.env.OMS_LISTEN_HOST ?? "127.0.0.1",
     port: intEnv("OMS_PORT", 8081),
@@ -51,6 +50,5 @@ export function loadConfig() {
 export function validateRuntimeConfig(config) {
   const missing = [];
   if (!config.tillwebBaseUrl) missing.push("TILLWEB_BASE_URL");
-  if (!config.omsToken) missing.push("TILLWEB_OMS_TOKEN");
   return missing;
 }
