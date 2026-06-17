@@ -58,7 +58,7 @@ function render() {
     return;
   }
 
-  const pending    = state.orders.filter(o => o.state === "pending");
+  const pending    = state.orders.filter(o => o.state === "unpaid");
   const processing = state.orders.filter(o => o.state === "processing");
   const collect    = state.orders.filter(o => o.state === "collect");
 
