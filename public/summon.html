@@ -45,7 +45,22 @@
     #message.order-loaded {
       color: #FCA311;
       font-size: clamp(3rem, 14vw, 8rem);
+      animation: order-pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
     }
+
+    @keyframes order-pop {
+      0%   { transform: scale(0.7); opacity: 0; }
+      100% { transform: scale(1);   opacity: 1; }
+    }
+
+    @keyframes bg-flash {
+      0%, 100% { background: #000F00; }
+      25%       { background: #2a1a00; }
+      50%       { background: #3d2600; }
+      75%       { background: #2a1a00; }
+    }
+
+    body.order-flash { animation: bg-flash 0.5s ease-out 1; }
 
     #subtitle {
       display: none;

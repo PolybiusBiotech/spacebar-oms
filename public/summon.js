@@ -19,6 +19,10 @@ function showOrderLoaded(orderRef) {
   messageEl.className = "order-loaded";
   subtitleEl.textContent = "PLEASE WAIT";
   subtitleEl.classList.add("visible");
+  document.body.classList.remove("order-flash");
+  void document.body.offsetWidth;
+  document.body.classList.add("order-flash");
+  document.body.addEventListener("animationend", () => document.body.classList.remove("order-flash"), { once: true });
   orderLoadedTimer = setTimeout(() => {
     orderLoadedTimer = null;
     applyMessage(currentMessage);
