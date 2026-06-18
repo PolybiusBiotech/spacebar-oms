@@ -158,9 +158,24 @@ async function pollLoop(config) {
 
 function mockOrders() {
   return [
-    { order_ref: "AA1111", order_name: "SB AA1111", total: "5.60", paid: false, lines: [], created_at: new Date().toISOString() },
-    { order_ref: "BB2222", order_name: "SB BB2222", total: "8.40", paid: true,  lines: [], created_at: new Date().toISOString() }
+    { order_ref: "42",  order_name: "42",  total: "3.50",  paid: false, lines: [], created_at: new Date().toISOString() },
+    { order_ref: "43",  order_name: "43",  total: "7.20",  paid: false, lines: [], created_at: new Date().toISOString() },
+    { order_ref: "44",  order_name: "44",  total: "12.00", paid: false, lines: [], created_at: new Date().toISOString() },
+    { order_ref: "45",  order_name: "45",  total: "5.60",  paid: true,  lines: [], created_at: new Date().toISOString() },
+    { order_ref: "46",  order_name: "46",  total: "8.40",  paid: true,  lines: [], created_at: new Date().toISOString() },
+    { order_ref: "47",  order_name: "47",  total: "4.20",  paid: true,  lines: [], created_at: new Date().toISOString() },
   ];
+}
+
+function seedMockCollect() {
+  const now = Date.now();
+  for (const ref of ["48", "49"]) {
+    orderState.set(ref, {
+      order_ref: ref, order_name: ref, total: "6.00",
+      state: "collect", collectAt: now, lines: [],
+      created_at: new Date().toISOString(),
+    });
+  }
 }
 
 function sendJson(res, status, payload) {
@@ -383,6 +398,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     for (const order of mockOrders()) {
       transitionOrder(order.order_ref, order);
     }
+    seedMockCollect();
     console.log("Mock mode: pre-loaded sample orders.");
   } else {
     const missing = validateRuntimeConfig(config);

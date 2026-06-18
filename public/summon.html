@@ -12,14 +12,74 @@
       height: 100dvh;
       display: flex;
       flex-direction: column;
+      position: relative;
+    }
+
+    /* CRT scanline overlay */
+    .crt-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 3px,
+        rgba(0,0,0,0.18) 3px,
+        rgba(0,0,0,0.18) 4px
+      );
+    }
+
+    /* Original PolyBio terminal — faintly visible behind the rebel hack */
+    #ghost-layer {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.7s ease;
+      padding: 2rem;
+      gap: 0;
+      z-index: 0;
+    }
+
+    #ghost-layer.visible {
+      opacity: 1;
+    }
+
+    .ghost-line {
+      font-family: 'Courier New', 'Courier', monospace;
+      font-size: clamp(0.45rem, 1.3vw, 0.75rem);
+      color: rgba(124, 193, 66, 0.09);
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      text-align: center;
+      white-space: nowrap;
+      line-height: 2.4;
+    }
+
+    .ghost-line.ghost-header {
+      color: rgba(124, 193, 66, 0.13);
+      font-size: clamp(0.55rem, 1.5vw, 0.88rem);
+      letter-spacing: 0.28em;
+    }
+
+    .ghost-line.ghost-dim {
+      color: rgba(124, 193, 66, 0.05);
+      letter-spacing: 0.6em;
     }
 
     #summon-display {
+      position: relative;
       flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 2rem;
+      z-index: 1;
     }
 
     #message-wrap {
@@ -37,9 +97,26 @@
       transition: opacity 0.2s;
     }
 
+    /* Keep "EMPLOYEE" and its quotes on one line */
+    #message .spray-quoted {
+      display: inline-block;
+      white-space: nowrap;
+    }
+
+    /* Graffiti quote marks — sprayed on over the corporate text */
+    #message .graffiti-quote {
+      color: #FCA311;
+      font-size: 1.1em;
+      font-weight: 900;
+      display: inline-block;
+      vertical-align: 0.05em;
+      line-height: 1;
+      filter: url(#spray-paint) drop-shadow(0 0 14px rgba(252,163,17,0.9)) drop-shadow(0 0 32px rgba(252,163,17,0.4));
+    }
+
     #message.pay-here {
       color: #7CC142;
-      font-size: clamp(4rem, 18vw, 10rem);
+      font-size: clamp(3rem, 13vw, 8rem);
     }
 
     #message.order-loaded {
@@ -108,6 +185,7 @@
       text-transform: uppercase;
       cursor: pointer;
       white-space: nowrap;
+      z-index: 2;
     }
 
     #help-btn:active {
@@ -118,13 +196,38 @@
   </style>
 </head>
 <body>
+  <div class="crt-overlay" aria-hidden="true"></div>
+  <!-- Original PolyBio corporate terminal — rebels hacked over it, but it bleeds through -->
+  <div id="ghost-layer">
+    <div class="ghost-line ghost-header">POLYBIUS BIOTECH GALACTIC TRADE NETWORK</div>
+    <div class="ghost-line ghost-dim">&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;</div>
+    <div class="ghost-line">BASE ASSET RETRIEVAL TERMINAL</div>
+    <div class="ghost-line">SPACEPORT PB-4242 // COMMERCIAL DIVISION</div>
+    <div class="ghost-line ghost-dim">&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;</div>
+    <div class="ghost-line">TRANSACTION PROCESSING SYSTEM v4.2.1</div>
+    <div class="ghost-line">AUTHORIZED PERSONNEL &amp; POLYPASS HOLDERS ONLY</div>
+    <div class="ghost-line ghost-dim">&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;</div>
+    <div class="ghost-line">ALL TRANSACTIONS MONITORED BY</div>
+    <div class="ghost-line">POLYBIUS COMPLIANCE DIVISION</div>
+    <div class="ghost-line ghost-dim">// UNAUTHORIZED ACCESS PROHIBITED //</div>
+  </div>
+
   <div id="summon-display">
     <div id="message-wrap">
-      <div id="message" class="pay-here">PAY HERE</div>
-      <div id="subtitle" class="visible">Scan order slip</div>
+      <div id="message" class="pay-here">INSERT PAYMENT CREDIT HERE</div>
+      <div id="subtitle" class="visible">Present order slip</div>
     </div>
   </div>
-  <button id="help-btn">Need help?</button>
+  <button id="help-btn">Request assistance</button>
   <script src="/summon.js"></script>
+  <!-- SVG spray-paint filter for graffiti quote marks -->
+  <svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+    <defs>
+      <filter id="spray-paint" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="4" seed="7" result="noise"/>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+    </defs>
+  </svg>
 </body>
 </html>

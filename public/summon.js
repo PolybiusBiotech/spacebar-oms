@@ -1,17 +1,46 @@
 const messageEl = document.getElementById("message");
 const subtitleEl = document.getElementById("subtitle");
-const helpBtn = document.getElementById("help-btn");
+const helpBtn    = document.getElementById("help-btn");
+const ghostEl    = document.getElementById("ghost-layer");
 
 let currentMessage = "PAY HERE";
 let orderLoadedTimer = null;
 
+// Messages sent from the control page plain/serious mode — no ghost layer
+const PLAIN_MESSAGES = new Set([
+  "PRESENT ID",
+  "REJECTED",
+  "APPROVED — PAY BELOW",
+  "PAYMENT PROCESSED",
+  "PLEASE WAIT",
+  "NEXT CUSTOMER",
+]);
+
+function escapeHtml(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// Render message as HTML — maps PAY HERE to lore text, wraps quoted words so
+// the content stays corporate but the quote marks look spray-painted on.
+function renderMessageHtml(msg) {
+  if (!msg || msg === "PAY HERE") return "INSERT PAYMENT CREDIT HERE";
+  const safe = escapeHtml(msg);
+  return safe.replace(/'([^']+)'/g,
+    `<span class="spray-quoted"><span class="graffiti-quote">&#x201C;</span>$1<span class="graffiti-quote">&#x201D;</span></span>`);
+}
+
 function applyMessage(msg) {
   const isDefault = !msg || msg === "PAY HERE";
-  messageEl.textContent = isDefault ? "PAY HERE" : msg;
+  const isPlain   = PLAIN_MESSAGES.has(msg);
+
+  messageEl.innerHTML = renderMessageHtml(msg);
   messageEl.className = isDefault ? "pay-here" : "";
-  subtitleEl.textContent = "Scan order slip";
+
+  subtitleEl.textContent = isDefault ? "Present order slip" : "";
   subtitleEl.classList.remove("soft-only");
   subtitleEl.classList.toggle("visible", isDefault);
+
+  ghostEl.classList.toggle("visible", !isPlain);
 }
 
 function showOrderLoaded(orderRef, softOnly = false) {

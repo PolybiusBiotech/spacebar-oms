@@ -158,15 +158,21 @@ document.addEventListener("click", e => {
   if (helpAlertTimer && e.target.closest("button, input")) stopHelpAlert();
 }, { capture: true });
 
+let currentDisplayMessage = "";
+
 function connect() {
   stopHelpAlert();
   const es = new EventSource("/summon/events");
   es.onmessage = e => {
     try {
       const { message } = JSON.parse(e.data);
+      currentDisplayMessage = message || "";
       currentEl.textContent = message || "—";
-      document.querySelectorAll(".preset").forEach(b => {
-        b.classList.toggle("preset--active", b.dataset.msg === message);
+      document.querySelectorAll(".preset[data-lore-msg]").forEach(b => {
+        const lorActive  = b.dataset.loreMsg  === message;
+        const plainActive = b.dataset.plainMsg === message && b.dataset.loreMsg !== message;
+        b.classList.toggle("preset--active-lore",  lorActive);
+        b.classList.toggle("preset--active-plain", plainActive);
       });
     } catch {}
   };
@@ -198,10 +204,20 @@ async function sendMessage(msg) {
   });
 }
 
-document.querySelectorAll(".preset").forEach(btn => {
+document.querySelectorAll(".preset[data-lore-msg]").forEach(btn => {
   btn.addEventListener("click", () => {
-    sendMessage(btn.dataset.msg);
-    if (btn.dataset.msg === "PRESENT ID" && currentOrderRef) {
+    const loreMsg  = btn.dataset.loreMsg;
+    const plainMsg = btn.dataset.plainMsg;
+
+    // Second tap on an active lore preset → send the plain/serious version
+    const msg = (currentDisplayMessage === loreMsg && plainMsg !== loreMsg)
+      ? plainMsg
+      : loreMsg;
+
+    sendMessage(msg);
+
+    // Either ID preset triggers the id_requested audit event
+    if (loreMsg === "PRESENT 'EMPLOYEE' ID" && currentOrderRef) {
       fetch(`/api/orders/${encodeURIComponent(currentOrderRef)}/id-check`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
