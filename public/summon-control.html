@@ -154,11 +154,40 @@
     }
     #btn-id-reject:active { background: #5a0000; }
     #order-alert.order-alert--soft-only #btn-id-reject { display: none; }
+
+    #printer-alerts { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem; }
+    #printer-alerts:empty { display: none; }
+    .printer-alert-banner {
+      background: #2a0a00;
+      border: 2px solid #cc4400;
+      border-radius: 0.5rem;
+      padding: 0.6rem 1rem;
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+    }
+    .printer-alert-label { color: #ff6600; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; flex-shrink: 0; }
+    .printer-alert-msg { color: #ffcc99; font-size: 0.9rem; flex: 1; }
+    .btn-clear-alert {
+      background: #3a1000;
+      border: 1px solid #cc4400;
+      border-radius: 0.35rem;
+      padding: 0.25rem 0.6rem;
+      color: #ff6600;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .btn-clear-alert:active { background: #5a1800; }
   </style>
 </head>
 <body>
   <div id="app">
     <h1>Summon Control</h1>
+
+    <div id="printer-alerts"></div>
 
     <div id="order-alert" hidden>
       <span class="order-alert-label">Order loaded</span>

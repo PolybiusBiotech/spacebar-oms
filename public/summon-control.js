@@ -1,4 +1,38 @@
 const currentEl = document.getElementById("current-message");
+const printerAlertsEl = document.getElementById("printer-alerts");
+
+function renderPrinterAlerts(alerts) {
+  printerAlertsEl.innerHTML = "";
+  for (const [location, info] of Object.entries(alerts || {})) {
+    const banner = document.createElement("div");
+    banner.className = "printer-alert-banner";
+
+    const label = document.createElement("span");
+    label.className = "printer-alert-label";
+    label.textContent = "⚠ Printer";
+
+    const msg = document.createElement("span");
+    msg.className = "printer-alert-msg";
+    msg.textContent = `${location}: ${info.message}`;
+
+    const btn = document.createElement("button");
+    btn.className = "btn-clear-alert";
+    btn.textContent = "Clear";
+    btn.addEventListener("click", () => {
+      fetch("/api/printer-alert", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ location })
+      }).catch(err => console.error("clear alert failed:", err));
+    });
+
+    banner.appendChild(label);
+    banner.appendChild(msg);
+    banner.appendChild(btn);
+    printerAlertsEl.appendChild(banner);
+  }
+}
+
 const customInput = document.getElementById("custom-input");
 const btnSend = document.getElementById("btn-send");
 const btnClear = document.getElementById("btn-clear");
@@ -125,6 +159,7 @@ document.addEventListener("click", e => {
 }, { capture: true });
 
 function connect() {
+  stopHelpAlert();
   const es = new EventSource("/summon/events");
   es.onmessage = e => {
     try {
@@ -140,6 +175,12 @@ function connect() {
     try {
       const { order_ref, soft_only } = JSON.parse(e.data);
       showOrderAlert(order_ref, soft_only);
+    } catch {}
+  });
+  es.addEventListener("printer-alert", e => {
+    try {
+      const { alerts } = JSON.parse(e.data);
+      renderPrinterAlerts(alerts);
     } catch {}
   });
   es.onerror = () => { es.close(); setTimeout(connect, 3000); };

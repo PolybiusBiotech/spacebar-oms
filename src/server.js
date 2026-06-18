@@ -61,7 +61,14 @@ function logIdCheck(config, orderRef, result) {
 function broadcastSummon() {
   const data = `data: ${JSON.stringify({ message: summonMessage })}\n\n`;
   for (const res of summonClients) {
-    res.write(data);
+    try { res.write(data); } catch { summonClients.delete(res); }
+  }
+}
+
+function broadcastPrinterAlerts() {
+  const data = `event: printer-alert\ndata: ${JSON.stringify({ alerts: printerAlerts })}\n\n`;
+  for (const res of summonClients) {
+    try { res.write(data); } catch { summonClients.delete(res); }
   }
 }
 
@@ -109,7 +116,7 @@ function pruneOrders(liveRefs) {
       if (order.collectAt && now - order.collectAt > COLLECT_TIMEOUT_MS) {
         orderState.delete(ref);
       }
-    } else if (!liveRefs.has(ref)) {
+    } else if (!liveRefs.has(ref) && order.state !== "processing") {
       orderState.delete(ref);
     }
   }
@@ -207,6 +214,7 @@ export function createServer(config) {
         const location = body.location || "unknown";
         printerAlerts[location] = { message: body.message || "Printer error", at: body.at || new Date().toISOString() };
         console.warn(`[printer-alert] ${location}: ${printerAlerts[location].message}`);
+        broadcastPrinterAlerts();
         sendJson(res, 200, { ok: true });
         return;
       }
@@ -218,6 +226,7 @@ export function createServer(config) {
         try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch {}
         if (body.location) delete printerAlerts[body.location];
         else Object.keys(printerAlerts).forEach(k => delete printerAlerts[k]);
+        broadcastPrinterAlerts();
         sendJson(res, 200, { ok: true });
         return;
       }
@@ -273,6 +282,9 @@ export function createServer(config) {
           "X-Accel-Buffering": "no"
         });
         res.write(`data: ${JSON.stringify({ message: summonMessage })}\n\n`);
+        if (Object.keys(printerAlerts).length > 0) {
+          res.write(`event: printer-alert\ndata: ${JSON.stringify({ alerts: printerAlerts })}\n\n`);
+        }
         summonClients.add(res);
         req.on("close", () => summonClients.delete(res));
         return;
@@ -334,7 +346,7 @@ export function createServer(config) {
       }
 
       // Clean URLs for the OMS screens
-      const rewrites = { "/customer": "/customer.html", "/staff": "/staff.html", "/summon": "/summon.html", "/summon/control": "/summon-control.html" };
+      const rewrites = { "/customer": "/customer.html", "/staff": "/staff.html", "/summon": "/summon.html", "/summon/control": "/summon-control.html", "/control": "/summon-control.html" };
       if (rewrites[url.pathname]) req.url = rewrites[url.pathname];
 
       if (req.method === "GET" || req.method === "HEAD") {
