@@ -48,9 +48,21 @@
       transition: background 0.1s, border-color 0.1s;
     }
     .preset:active { background: #2a2a2a; border-color: #555; }
-    .preset--active { border-color: #BE00FE; color: #BE00FE; }
+    .preset--active-lore  { border-color: #BE00FE; color: #BE00FE; }
+    .preset--active-plain { border-color: #FCA311; color: #FCA311; }
     .preset--default { background: #0d2a00; border-color: #7CC142; color: #7CC142; }
-    .preset--default.preset--active { background: #1a4500; border-color: #7CC142; color: #7CC142; }
+    .preset--default.preset--active-lore { background: #0d2a00; border-color: #7CC142; color: #7CC142; }
+
+    .preset-quote { color: #FCA311; font-style: italic; }
+    .preset-plain-hint {
+      display: block;
+      font-size: 0.6rem;
+      font-weight: 400;
+      color: #555;
+      letter-spacing: 0.04em;
+      margin-top: 0.3rem;
+      text-transform: none;
+    }
 
     .freetext {
       display: flex;
@@ -185,14 +197,14 @@
 </head>
 <body>
   <div id="app">
-    <h1>Summon Control</h1>
+    <h1>B.A.R. Terminal Control</h1>
 
     <div id="printer-alerts"></div>
 
     <div id="order-alert" hidden>
       <span class="order-alert-label">Order loaded</span>
       <span id="order-alert-ref"></span>
-      <button id="btn-id-reject">✗ ID Rejected</button>
+      <button id="btn-id-reject">✗ Reject ID</button>
     </div>
 
     <div class="current">
@@ -201,13 +213,33 @@
     </div>
 
     <div class="presets">
-      <button class="preset preset--default" data-msg="PAY HERE">PAY HERE</button>
-      <button class="preset" data-msg="PRESENT ID">PRESENT ID</button>
-      <button class="preset" data-msg="REJECTED">REJECTED</button>
-      <button class="preset" data-msg="APPROVED — PAY BELOW">APPROVED — PAY BELOW</button>
-      <button class="preset" data-msg="PAYMENT PROCESSED">PAYMENT PROCESSED</button>
-      <button class="preset" data-msg="PLEASE WAIT">PLEASE WAIT</button>
-      <button class="preset" data-msg="NEXT CUSTOMER">NEXT CUSTOMER</button>
+      <button class="preset preset--default" data-lore-msg="PAY HERE" data-plain-msg="PAY HERE">
+        PAY HERE
+      </button>
+      <button class="preset" data-lore-msg="PRESENT 'EMPLOYEE' ID" data-plain-msg="PRESENT ID">
+        PRESENT <span class="preset-quote">'EMPLOYEE'</span> ID
+        <span class="preset-plain-hint">×2 → PRESENT ID</span>
+      </button>
+      <button class="preset" data-lore-msg="CREDENTIAL DENIED" data-plain-msg="REJECTED">
+        CREDENTIAL DENIED
+        <span class="preset-plain-hint">×2 → REJECTED</span>
+      </button>
+      <button class="preset" data-lore-msg="VERIFICATION APPROVED — TRANSACT BELOW" data-plain-msg="APPROVED — PAY BELOW">
+        APPROVED — TRANSACT BELOW
+        <span class="preset-plain-hint">×2 → APPROVED — PAY BELOW</span>
+      </button>
+      <button class="preset" data-lore-msg="CREDIT TRANSFER COMPLETE" data-plain-msg="PAYMENT PROCESSED">
+        CREDIT TRANSFER COMPLETE
+        <span class="preset-plain-hint">×2 → PAYMENT PROCESSED</span>
+      </button>
+      <button class="preset" data-lore-msg="STAND BY, UNIT" data-plain-msg="PLEASE WAIT">
+        STAND BY, UNIT
+        <span class="preset-plain-hint">×2 → PLEASE WAIT</span>
+      </button>
+      <button class="preset" data-lore-msg="NEXT UNIT" data-plain-msg="NEXT CUSTOMER">
+        NEXT UNIT
+        <span class="preset-plain-hint">×2 → NEXT CUSTOMER</span>
+      </button>
     </div>
 
     <div class="freetext">
