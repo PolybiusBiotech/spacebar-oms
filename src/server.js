@@ -223,6 +223,16 @@ export function createServer(config) {
       }
 
       if (url.pathname === "/api/orders" && req.method === "GET") {
+        const ref = url.searchParams.get("order");
+        if (ref) {
+          const o = orderState.get(ref);
+          if (!o) {
+            sendJson(res, 404, { error: "not-found" });
+          } else {
+            sendJson(res, 200, { order: { order_ref: o.order_ref, state: o.state } });
+          }
+          return;
+        }
         const orders = [...orderState.values()].map(o => ({
           order_ref: o.order_ref,
           order_name: o.order_name,

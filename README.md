@@ -49,16 +49,39 @@ staff acknowledge by pressing any button.
   local network. Override with `OMS_LISTEN_HOST=127.0.0.1` to restrict to
   localhost.
 
+## API
+
+### `GET /api/orders`
+
+Returns all orders currently in the OMS state machine.
+
+```json
+{ "orders": [{ "order_ref": "...", "state": "unpaid|processing|collect", ... }] }
+```
+
+Pass `?order=<ref>` to return a single order (used by the Tildagon badge to poll
+its own order status):
+
+```json
+{ "order": { "order_ref": "T1001", "state": "processing" } }
+```
+
+Returns 404 if the order is not in the OMS state (not yet seen, or pruned after
+expiry / collect timeout).
+
 ## Local development
 
 ```sh
 cp .env.example .env
-$EDITOR .env
+$EDITOR .env   # set TILLWEB_BASE_URL and TILLWEB_TOKEN
 npm start
 ```
 
 For local work without a live till, set `OMS_MOCK_MODE=true` — the server
 pre-loads two sample orders (one pending, one processing).
+
+To run against the local mock till (badge sim included), see
+[`dev/README.md`](../dev/README.md) in the top-level repo.
 
 Then open `http://127.0.0.1:8081`.
 
@@ -73,7 +96,7 @@ sudo systemctl restart spacebar-oms.service spacebar-oms-browser.service
 Required settings:
 
 - `TILLWEB_BASE_URL`: tillweb base URL.
-- `TILLWEB_OMS_TOKEN`: bearer token from `emftillweb`'s `[kiosk.tokens]` config.
+- `TILLWEB_TOKEN`: bearer token from `emftillweb`'s `[kiosk.tokens]` config.
 - `OMS_LOCATION`: tillweb location to watch, default `Kiosk`.
 
 ## Operations
@@ -86,6 +109,4 @@ curl http://127.0.0.1:8081/healthz
 
 ## Tillweb dependency
 
-The OMS requires a `GET /api/kiosk/orders.json` endpoint in emftillweb that
-does not yet exist. See `OMS_AGENT_NOTES.md` in the repo root for the full
-implementation plan.
+Requires `GET /api/kiosk/orders.json` in emftillweb — implemented and merged.
