@@ -42,3 +42,17 @@ export async function fetchOrders(config) {
   const data = await tillwebFetch(config, `/api/kiosk/orders.json?${params}`);
   return data.orders ?? [];
 }
+
+export async function markRejected(config, orderRef) {
+  await tillwebFetch(config, `/api/kiosk/orders/${encodeURIComponent(orderRef)}/id-reject`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
+export async function markCollected(config, orderRef) {
+  await tillwebFetch(config, `/api/kiosk/orders/${encodeURIComponent(orderRef)}/collect`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}

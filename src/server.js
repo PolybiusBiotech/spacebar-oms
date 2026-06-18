@@ -4,7 +4,7 @@ import { appendFileSync } from "node:fs";
 import path from "node:path";
 
 import { loadConfig, validateRuntimeConfig } from "./config.js";
-import { fetchOrders, TillwebError } from "./tillweb.js";
+import { fetchOrders, markCollected, markRejected, TillwebError } from "./tillweb.js";
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -18,6 +18,9 @@ const COLLECT_TIMEOUT_MS = 2 * 60 * 1000;
 // In-memory order state.
 // Map<order_ref, { ...tillwebFields, state: 'pending'|'processing'|'collect', collectAt: number|null }>
 const orderState = new Map();
+
+// Refs that have been collected — never re-enter the state machine after collect timeout.
+const collectedRefs = new Set();
 
 // In-memory printer alerts from kiosks. Keyed by location, last alert wins.
 // { [location]: { message, at } }
@@ -87,6 +90,8 @@ function setSummonMessage(msg) {
 
 function transitionOrder(ref, incoming) {
   const existing = orderState.get(ref);
+
+  if (collectedRefs.has(ref)) return;
 
   if (!existing) {
     orderState.set(ref, {
@@ -269,7 +274,11 @@ export function createServer(config) {
         }
         const collected = { ...order, state: "collect", collectAt: Date.now() };
         orderState.set(ref, collected);
+        collectedRefs.add(ref);
         logCollect(config, collected);
+        markCollected(config, ref).catch(err =>
+          console.error(`[collect] Failed to mark ${ref} collected in tillweb: ${err.message}`)
+        );
         sendJson(res, 200, { order_ref: ref, state: "collect" });
         return;
       }
@@ -314,9 +323,15 @@ export function createServer(config) {
         for await (const chunk of req) chunks.push(chunk);
         let body = {};
         try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch {}
-        const result = body.result === "approved" ? "approved" : "rejected";
-        logIdCheck(config, ref, result);
-        if (result === "rejected") setSummonMessage("REJECTED");
+        const result = ["approved", "rejected", "id_requested"].includes(body.result)
+          ? body.result : "rejected";
+        if (result !== "id_requested") logIdCheck(config, ref, result);
+        if (result === "rejected") {
+          setSummonMessage("REJECTED");
+          markRejected(config, ref).catch(err =>
+            console.error(`[id-check] Failed to mark ${ref} rejected in tillweb: ${err.message}`)
+          );
+        }
         sendJson(res, 200, { ok: true, order_ref: ref, result });
         return;
       }
