@@ -5,6 +5,9 @@ const ghostEl    = document.getElementById("ghost-layer");
 
 let currentMessage = "PAY HERE";
 let orderLoadedTimer = null;
+let reconnectDelay = 3000;
+const RECONNECT_BASE = 3000;
+const RECONNECT_MAX  = 30_000;
 
 // Messages sent from the control page plain/serious mode — no ghost layer
 const PLAIN_MESSAGES = new Set([
@@ -67,6 +70,7 @@ function connect() {
   es.onmessage = e => {
     try {
       const { message } = JSON.parse(e.data);
+      reconnectDelay = RECONNECT_BASE;
       currentMessage = message || "PAY HERE";
       if (!orderLoadedTimer) applyMessage(currentMessage);
     } catch {}
@@ -81,7 +85,8 @@ function connect() {
 
   es.onerror = () => {
     es.close();
-    setTimeout(connect, 3000);
+    setTimeout(connect, reconnectDelay);
+    reconnectDelay = Math.min(reconnectDelay * 2, RECONNECT_MAX);
   };
 }
 

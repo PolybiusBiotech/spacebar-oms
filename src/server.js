@@ -33,6 +33,17 @@ let summonClearTimer = null;
 const summonClients = new Set();
 const SUMMON_IDLE_MS = 30_000;
 
+// Help-pending state — survives SSE reconnects.
+let helpPending = false;
+let helpClearTimer = null;
+const HELP_TIMEOUT_MS = 120_000;
+
+function clearHelp() {
+  helpPending = false;
+  clearTimeout(helpClearTimer);
+  helpClearTimer = null;
+}
+
 function logCollect(config, order) {
   if (!config.collectLog) return;
   const entry = {
@@ -309,6 +320,9 @@ export function createServer(config) {
         if (Object.keys(printerAlerts).length > 0) {
           res.write(`event: printer-alert\ndata: ${JSON.stringify({ alerts: printerAlerts })}\n\n`);
         }
+        if (helpPending) {
+          res.write(`event: help\ndata: {}\n\n`);
+        }
         summonClients.add(res);
         req.on("close", () => summonClients.delete(res));
         return;
@@ -352,9 +366,18 @@ export function createServer(config) {
       }
 
       if (url.pathname === "/summon/help" && req.method === "POST") {
+        helpPending = true;
+        clearTimeout(helpClearTimer);
+        helpClearTimer = setTimeout(clearHelp, HELP_TIMEOUT_MS);
         setSummonMessage("PLEASE WAIT");
         const helpAlert = `event: help\ndata: {}\n\n`;
         for (const client of summonClients) client.write(helpAlert);
+        sendJson(res, 200, { ok: true });
+        return;
+      }
+
+      if (url.pathname === "/summon/help/clear" && req.method === "POST") {
+        clearHelp();
         sendJson(res, 200, { ok: true });
         return;
       }

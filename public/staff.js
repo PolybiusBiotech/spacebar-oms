@@ -53,6 +53,8 @@ async function refresh() {
     const orders = data.orders ?? [];
     const printerAlerts = data.printer_alerts ?? {};
 
+    refreshDelay = REFRESH_BASE;
+
     // Printer alerts banner
     const alertEntries = Object.entries(printerAlerts);
     alertsEl.innerHTML = alertEntries.map(([loc, alert]) => `
@@ -72,6 +74,7 @@ async function refresh() {
     payingEl.innerHTML  = byState.processing.map(renderOrder).join("") || "<p>None</p>";
     collectEl.innerHTML = byState.collect.map(renderOrder).join("") || "<p>None</p>";
   } catch (err) {
+    refreshDelay = Math.min(refreshDelay * 2, REFRESH_MAX);
     errorEl.innerHTML = `<div class="error-banner">${escapeHtml(err.message)}</div>`;
   }
 }
@@ -91,5 +94,13 @@ document.addEventListener("click", async e => {
   }
 });
 
-refresh();
-setInterval(refresh, 3000);
+let refreshDelay = 3000;
+const REFRESH_BASE = 3000;
+const REFRESH_MAX  = 30_000;
+
+async function refreshLoop() {
+  await refresh();
+  setTimeout(refreshLoop, refreshDelay);
+}
+
+refreshLoop();

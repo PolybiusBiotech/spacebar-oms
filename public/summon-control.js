@@ -153,12 +153,20 @@ function stopHelpAlert() {
   }
 }
 
+function acknowledgeHelp() {
+  stopHelpAlert();
+  fetch("/summon/help/clear", { method: "POST" }).catch(() => {});
+}
+
 // Any staff action acknowledges the alert
 document.addEventListener("click", e => {
-  if (helpAlertTimer && e.target.closest("button, input")) stopHelpAlert();
+  if (helpAlertTimer && e.target.closest("button, input")) acknowledgeHelp();
 }, { capture: true });
 
 let currentDisplayMessage = "";
+let reconnectDelay = 3000;
+const RECONNECT_BASE = 3000;
+const RECONNECT_MAX  = 30_000;
 
 function connect() {
   stopHelpAlert();
@@ -166,6 +174,7 @@ function connect() {
   es.onmessage = e => {
     try {
       const { message } = JSON.parse(e.data);
+      reconnectDelay = RECONNECT_BASE;
       currentDisplayMessage = message || "";
       currentEl.textContent = message || "—";
       document.querySelectorAll(".preset[data-lore-msg]").forEach(b => {
@@ -189,7 +198,11 @@ function connect() {
       renderPrinterAlerts(alerts);
     } catch {}
   });
-  es.onerror = () => { es.close(); setTimeout(connect, 3000); };
+  es.onerror = () => {
+    es.close();
+    setTimeout(connect, reconnectDelay);
+    reconnectDelay = Math.min(reconnectDelay * 2, RECONNECT_MAX);
+  };
 }
 
 connect();

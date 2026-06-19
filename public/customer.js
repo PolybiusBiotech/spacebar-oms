@@ -6,11 +6,17 @@ const pending = document.getElementById("pending");
 const paying  = document.getElementById("paying");
 const collect = document.getElementById("collect");
 
+let refreshDelay = 3000;
+const REFRESH_BASE = 3000;
+const REFRESH_MAX  = 30_000;
+
 async function refresh() {
   try {
     const res  = await fetch("/api/orders");
     const data = await res.json();
     const orders = data.orders ?? [];
+
+    refreshDelay = REFRESH_BASE;
 
     const byState = { unpaid: [], processing: [], collect: [] };
     for (const o of orders) {
@@ -24,9 +30,14 @@ async function refresh() {
     collect.innerHTML = byState.collect.map(o =>
       `<div class="order-name">${escapeHtml(o.order_name)}</div>`).join("") || "";
   } catch {
+    refreshDelay = Math.min(refreshDelay * 2, REFRESH_MAX);
     // silent — screen keeps showing last good state
   }
 }
 
-refresh();
-setInterval(refresh, 3000);
+async function refreshLoop() {
+  await refresh();
+  setTimeout(refreshLoop, refreshDelay);
+}
+
+refreshLoop();
