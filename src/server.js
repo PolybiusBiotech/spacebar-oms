@@ -27,12 +27,12 @@ const collectedRefs = new Set();
 // { [location]: { message, at } }
 const printerAlerts = {};
 
-// In-memory summon state.
-const SUMMON_DEFAULT = "PAY HERE";
-let summonMessage = SUMMON_DEFAULT;
-let summonClearTimer = null;
-const summonClients = new Set();
-const SUMMON_IDLE_MS = 30_000;
+// In-memory payment instruction screen state.
+const PAY_DEFAULT = "PAY HERE";
+let payMessage = PAY_DEFAULT;
+let payClearTimer = null;
+const payClients = new Set();
+const PAY_IDLE_MS = 30_000;
 
 // Help-pending state — survives SSE reconnects.
 let helpPending = false;
@@ -73,31 +73,31 @@ function logIdCheck(config, orderRef, result) {
   }
 }
 
-function broadcastSummon() {
-  const data = `data: ${JSON.stringify({ message: summonMessage })}\n\n`;
-  for (const res of summonClients) {
-    try { res.write(data); } catch { summonClients.delete(res); }
+function broadcastPayMessage() {
+  const data = `data: ${JSON.stringify({ message: payMessage })}\n\n`;
+  for (const res of payClients) {
+    try { res.write(data); } catch { payClients.delete(res); }
   }
 }
 
 function broadcastPrinterAlerts() {
   const data = `event: printer-alert\ndata: ${JSON.stringify({ alerts: printerAlerts })}\n\n`;
-  for (const res of summonClients) {
-    try { res.write(data); } catch { summonClients.delete(res); }
+  for (const res of payClients) {
+    try { res.write(data); } catch { payClients.delete(res); }
   }
 }
 
-function setSummonMessage(msg) {
-  summonMessage = msg || SUMMON_DEFAULT;
-  clearTimeout(summonClearTimer);
-  summonClearTimer = null;
-  if (summonMessage !== SUMMON_DEFAULT) {
-    summonClearTimer = setTimeout(() => {
-      summonMessage = SUMMON_DEFAULT;
-      broadcastSummon();
-    }, SUMMON_IDLE_MS);
+function setPayMessage(msg) {
+  payMessage = msg || PAY_DEFAULT;
+  clearTimeout(payClearTimer);
+  payClearTimer = null;
+  if (payMessage !== PAY_DEFAULT) {
+    payClearTimer = setTimeout(() => {
+      payMessage = PAY_DEFAULT;
+      broadcastPayMessage();
+    }, PAY_IDLE_MS);
   }
-  broadcastSummon();
+  broadcastPayMessage();
 }
 
 function transitionOrder(ref, incoming) {
@@ -310,26 +310,26 @@ export function createServer(config) {
         return;
       }
 
-      if (url.pathname === "/summon/events" && req.method === "GET") {
+      if (url.pathname === "/pay/events" && req.method === "GET") {
         res.writeHead(200, {
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
           "Connection": "keep-alive",
           "X-Accel-Buffering": "no"
         });
-        res.write(`data: ${JSON.stringify({ message: summonMessage })}\n\n`);
+        res.write(`data: ${JSON.stringify({ message: payMessage })}\n\n`);
         if (Object.keys(printerAlerts).length > 0) {
           res.write(`event: printer-alert\ndata: ${JSON.stringify({ alerts: printerAlerts })}\n\n`);
         }
         if (helpPending) {
           res.write(`event: help\ndata: {}\n\n`);
         }
-        summonClients.add(res);
-        req.on("close", () => summonClients.delete(res));
+        payClients.add(res);
+        req.on("close", () => payClients.delete(res));
         return;
       }
 
-      if (url.pathname === "/summon/order-loaded" && req.method === "POST") {
+      if (url.pathname === "/pay/order-loaded" && req.method === "POST") {
         const chunks = [];
         for await (const chunk of req) chunks.push(chunk);
         let body = {};
@@ -338,8 +338,8 @@ export function createServer(config) {
         const softOnly = Boolean(body.soft_only);
         if (orderRef) {
           const payload = `event: order-loaded\ndata: ${JSON.stringify({ order_ref: orderRef, soft_only: softOnly })}\n\n`;
-          for (const client of summonClients) client.write(payload);
-          console.log(`[summon] order loaded: ${orderRef}${softOnly ? " (soft-only)" : ""}`);
+          for (const client of payClients) client.write(payload);
+          console.log(`[pay] order loaded: ${orderRef}${softOnly ? " (soft-only)" : ""}`);
           if (softOnly) logIdCheck(config, orderRef, "soft_only_no_check");
         }
         sendJson(res, 200, { ok: true });
@@ -357,7 +357,7 @@ export function createServer(config) {
           ? body.result : "rejected";
         if (result !== "id_requested") logIdCheck(config, ref, result);
         if (result === "rejected") {
-          setSummonMessage("REJECTED");
+          setPayMessage("REJECTED");
           markRejected(config, ref).catch(err =>
             console.error(`[id-check] Failed to mark ${ref} rejected in tillweb: ${err.message}`)
           );
@@ -366,41 +366,41 @@ export function createServer(config) {
         return;
       }
 
-      if (url.pathname === "/summon/help" && req.method === "POST") {
+      if (url.pathname === "/pay/help" && req.method === "POST") {
         helpPending = true;
         clearTimeout(helpClearTimer);
         helpClearTimer = setTimeout(clearHelp, HELP_TIMEOUT_MS);
-        setSummonMessage("PLEASE WAIT");
+        setPayMessage("PLEASE WAIT");
         const helpAlert = `event: help\ndata: {}\n\n`;
-        for (const client of summonClients) client.write(helpAlert);
+        for (const client of payClients) client.write(helpAlert);
         sendJson(res, 200, { ok: true });
         return;
       }
 
-      if (url.pathname === "/summon/help/clear" && req.method === "POST") {
+      if (url.pathname === "/pay/help/clear" && req.method === "POST") {
         clearHelp();
         sendJson(res, 200, { ok: true });
         return;
       }
 
-      if (url.pathname === "/summon/message" && req.method === "POST") {
+      if (url.pathname === "/pay/message" && req.method === "POST") {
         const chunks = [];
         for await (const chunk of req) chunks.push(chunk);
         let body = {};
         try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch {}
-        setSummonMessage(String(body.message ?? "").slice(0, 200));
-        sendJson(res, 200, { ok: true, message: summonMessage });
+        setPayMessage(String(body.message ?? "").slice(0, 200));
+        sendJson(res, 200, { ok: true, message: payMessage });
         return;
       }
 
-      if (url.pathname === "/summon/clear" && req.method === "POST") {
-        setSummonMessage("");
+      if (url.pathname === "/pay/clear" && req.method === "POST") {
+        setPayMessage("");
         sendJson(res, 200, { ok: true });
         return;
       }
 
       // Clean URLs for the OMS screens
-      const rewrites = { "/customer": "/customer.html", "/staff": "/staff.html", "/summon": "/summon.html", "/summon/control": "/summon-control.html", "/control": "/summon-control.html" };
+      const rewrites = { "/status": "/status.html", "/staff": "/staff.html", "/pay": "/pay.html", "/pay/control": "/pay-control.html", "/control": "/pay-control.html" };
       if (rewrites[url.pathname]) req.url = rewrites[url.pathname];
 
       if (req.method === "GET" || req.method === "HEAD") {
@@ -447,8 +447,8 @@ if (isMain) {
   });
 
   setInterval(() => {
-    for (const client of summonClients) {
-      try { client.write(": ping\n\n"); } catch { summonClients.delete(client); }
+    for (const client of payClients) {
+      try { client.write(": ping\n\n"); } catch { payClients.delete(client); }
     }
   }, 25_000);
 }

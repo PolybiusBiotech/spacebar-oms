@@ -65,7 +65,7 @@ function showOrderLoaded(orderRef, softOnly = false) {
 }
 
 function connect() {
-  const es = new EventSource("/summon/events");
+  const es = new EventSource("/pay/events");
 
   es.onmessage = e => {
     try {
@@ -93,5 +93,5 @@ function connect() {
 connect();
 
 helpBtn.addEventListener("click", () => {
-  fetch("/summon/help", { method: "POST" });
+  fetch("/pay/help", { method: "POST" });
 });

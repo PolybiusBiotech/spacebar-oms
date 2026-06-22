@@ -155,7 +155,7 @@ function stopHelpAlert() {
 
 function acknowledgeHelp() {
   stopHelpAlert();
-  fetch("/summon/help/clear", { method: "POST" }).catch(() => {});
+  fetch("/pay/help/clear", { method: "POST" }).catch(() => {});
 }
 
 // Any staff action acknowledges the alert
@@ -170,7 +170,7 @@ const RECONNECT_MAX  = 30_000;
 
 function connect() {
   stopHelpAlert();
-  const es = new EventSource("/summon/events");
+  const es = new EventSource("/pay/events");
   es.onmessage = e => {
     try {
       const { message } = JSON.parse(e.data);
@@ -210,7 +210,7 @@ connect();
 // --- Send message ---
 
 async function sendMessage(msg) {
-  await fetch("/summon/message", {
+  await fetch("/pay/message", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ message: msg })

@@ -17,13 +17,13 @@ live state of all kiosk orders — from creation through payment to collection.
 |---|---|---|
 | `/staff` | Staff tablet | Live order board — unpaid, processing, collect columns |
 | `/customer` | Customer display | Order collection screen |
-| `/summon` | iPhone at bar | Full-screen message display; "Need help?" button |
-| `/control` | Staff screen at till | Send messages to summon display; order-loaded + printer alerts |
-| `/summon/control` | Staff screen at till | Same as `/control` |
+| `/pay` | iPhone at bar | Full-screen message display; "Need help?" button |
+| `/control` | Staff screen at till | Send messages to payment instruction screen; order-loaded + printer alerts |
+| `/pay/control` | Staff screen at till | Same as `/control` |
 
-### Summon system
+### Payment instruction system
 
-The summon display (`/summon`) shows a message pushed from the staff control page (`/control`) over SSE. Default state is **PAY HERE** (large green). Other messages appear in purple. All connected clients stay in sync — the control page is itself an SSE subscriber and reflects the current state.
+The payment instruction screen (`/pay`) shows a message pushed from the staff control page (`/control`) over SSE. Default state is **PAY HERE** (large green). Other messages appear in purple. All connected clients stay in sync — the control page is itself an SSE subscriber and reflects the current state.
 
 **Presets:** PAY HERE · PRESENT ID · REJECTED · APPROVED — PAY BELOW ·
 PAYMENT PROCESSED · PLEASE WAIT · NEXT CUSTOMER
@@ -32,15 +32,15 @@ PAYMENT PROCESSED · PLEASE WAIT · NEXT CUSTOMER
 
 **Help button:** the customer taps "Need help?" on the iPhone. This sets PLEASE WAIT with no idle timeout and fires a named SSE `help` event to all control-page clients, triggering a repeating red flash + triple beep until staff acknowledge by pressing any button. ⚠️ Unreliable — see [open-questions.md Q17](../docs/open-questions.md).
 
-**Order-loaded alert:** when the barcode scanner at the till reads a QR/slip, the recall plugin fires `POST /summon/order-loaded`. The control page shows a 5-second pop-up with the order ref and an "ID Rejected" shortcut button. Soft-only orders show a green "auto pay" variant.
+**Order-loaded alert:** when the barcode scanner at the till reads a QR/slip, the recall plugin fires `POST /pay/order-loaded`. The control page shows a 5-second pop-up with the order ref and an "ID Rejected" shortcut button. Soft-only orders show a green "auto pay" variant.
 
-**Printer alerts:** when a kiosk printer fails it POSTs to `POST /api/printer-alert`. The control page shows a persistent orange banner per kiosk. Staff clear it with the "Clear" button once the printer is fixed. Alerts are pushed over SSE and replayed on reconnect. They do **not** appear on the customer-facing `/summon` display.
+**Printer alerts:** when a kiosk printer fails it POSTs to `POST /api/printer-alert`. The control page shows a persistent orange banner per kiosk. Staff clear it with the "Clear" button once the printer is fixed. Alerts are pushed over SSE and replayed on reconnect. They do **not** appear on the customer-facing `/pay` display.
 
-### SSE events on `/summon/events`
+### SSE events on `/pay/events`
 
 | Event | Who listens | Payload |
 |---|---|---|
-| *(unnamed message)* | `/summon` and `/control` | `{ message }` — current display text |
+| *(unnamed message)* | `/pay` and `/control` | `{ message }` — current display text |
 | `order-loaded` | `/control` only | `{ order_ref, soft_only }` |
 | `help` | `/control` only | `{}` |
 | `printer-alert` | `/control` only | `{ alerts: { location: { message, at } } }` |
@@ -64,7 +64,7 @@ PAYMENT PROCESSED · PLEASE WAIT · NEXT CUSTOMER
 |---|---|---|
 | `GET /api/orders` | none | All orders in OMS state machine, plus `printer_alerts`. Add `?order=<ref>` for a single order (used by badge). |
 | `POST /api/orders/<ref>/collect` | none (VLAN-only) | Move order from `processing` → `collect`. 409 if wrong state. |
-| `POST /api/orders/<ref>/id-check` | none (VLAN-only) | Log ID-check result (`approved` / `rejected`). `rejected` auto-pushes "REJECTED" to summon display. |
+| `POST /api/orders/<ref>/id-check` | none (VLAN-only) | Log ID-check result (`approved` / `rejected`). `rejected` auto-pushes "REJECTED" to payment instruction screen. |
 
 ### Printer alerts
 
@@ -73,15 +73,15 @@ PAYMENT PROCESSED · PLEASE WAIT · NEXT CUSTOMER
 | `POST /api/printer-alert` | none (VLAN-only) | Body: `{ location, message }`. Stored in memory and broadcast over SSE. |
 | `DELETE /api/printer-alert` | none (VLAN-only) | Body: `{ location }` to clear one, or empty to clear all. Broadcast over SSE. |
 
-### Summon
+### Payment instruction
 
 | Endpoint | Auth | Notes |
 |---|---|---|
-| `GET /summon/events` | none | SSE stream. See SSE events table above. |
-| `POST /summon/message` | none (VLAN-only) | Body: `{ message }`. Pushes to display, resets idle timer. |
-| `POST /summon/clear` | none (VLAN-only) | Reset display to PAY HERE immediately. |
-| `POST /summon/help` | none (VLAN-only) | Customer help request. Sets PLEASE WAIT; fires `help` SSE event. |
-| `POST /summon/order-loaded` | none (VLAN-only) | Body: `{ order_ref, soft_only }`. Called by quicktill-kiosk-plugin on scan. |
+| `GET /pay/events` | none | SSE stream. See SSE events table above. |
+| `POST /pay/message` | none (VLAN-only) | Body: `{ message }`. Pushes to display, resets idle timer. |
+| `POST /pay/clear` | none (VLAN-only) | Reset display to PAY HERE immediately. |
+| `POST /pay/help` | none (VLAN-only) | Customer help request. Sets PLEASE WAIT; fires `help` SSE event. |
+| `POST /pay/order-loaded` | none (VLAN-only) | Body: `{ order_ref, soft_only }`. Called by quicktill-kiosk-plugin on scan. |
 
 ### Health
 
