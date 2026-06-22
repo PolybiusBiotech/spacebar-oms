@@ -1,4 +1,20 @@
 const currentEl = document.getElementById("current-message");
+const btnMaintenance = document.getElementById("btn-maintenance");
+let maintenanceActive = false;
+
+btnMaintenance.addEventListener("click", () => {
+  fetch("/maintenance", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ active: !maintenanceActive })
+  }).catch(err => console.error("maintenance toggle failed:", err));
+});
+
+function setMaintenanceUI(active) {
+  maintenanceActive = active;
+  btnMaintenance.textContent = active ? "Disable maintenance mode" : "Enable maintenance mode";
+  btnMaintenance.classList.toggle("btn-maintenance--active", active);
+}
 const printerAlertsEl = document.getElementById("printer-alerts");
 
 function renderPrinterAlerts(alerts) {
@@ -135,6 +151,13 @@ function connect() {
       showOrderAlert(order_ref, soft_only);
     } catch {}
   });
+  es.addEventListener("maintenance", e => {
+    try {
+      const { active } = JSON.parse(e.data);
+      setMaintenanceUI(active);
+    } catch {}
+  });
+
   es.addEventListener("printer-alert", e => {
     try {
       const { alerts } = JSON.parse(e.data);

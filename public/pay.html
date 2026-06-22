@@ -157,6 +157,34 @@
     body.order-flash      { animation: bg-flash      0.5s ease-out 1; }
     body.order-flash-soft { animation: bg-flash-soft 0.5s ease-out 1; }
 
+    #maintenance-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9998;
+      background: #000F00;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+    }
+    #maintenance-overlay[hidden] { display: none; }
+    .maintenance-title {
+      font-size: clamp(2rem, 10vw, 5rem);
+      font-weight: 700;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: #7CC142;
+      animation: maintenance-blink 1.4s step-end infinite;
+    }
+    .maintenance-sub {
+      font-size: clamp(0.7rem, 2.5vw, 1rem);
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(124,193,66,0.45);
+    }
+    @keyframes maintenance-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
     #subtitle {
       display: none;
       margin-top: 1rem;
@@ -188,6 +216,11 @@
     <div class="ghost-line">ALL TRANSACTIONS MONITORED BY</div>
     <div class="ghost-line">POLYBIUS COMPLIANCE DIVISION</div>
     <div class="ghost-line ghost-dim">// UNAUTHORIZED ACCESS PROHIBITED //</div>
+  </div>
+
+  <div id="maintenance-overlay" hidden aria-live="assertive">
+    <p class="maintenance-title">TERMINAL OFFLINE</p>
+    <p class="maintenance-sub">FACILITY CLOSED — STAND BY</p>
   </div>
 
   <div id="pay-display">

@@ -105,6 +105,25 @@
     }
     .btn-clear:active { background: #333; }
 
+    .btn-maintenance {
+      width: 100%;
+      background: #1a0000;
+      border: 1px solid #553333;
+      border-radius: 0.5rem;
+      padding: 0.875rem;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #886666;
+      cursor: pointer;
+      margin-top: 0.75rem;
+    }
+    .btn-maintenance:active { background: #2a0000; }
+    .btn-maintenance--active {
+      background: #3a0000;
+      border-color: #cc2200;
+      color: #ff4422;
+    }
+
     @keyframes order-flash {
       0%, 100% { background: #0d0d0d; }
       50% { background: #003344; }
@@ -241,6 +260,8 @@
     </div>
 
     <button class="btn-clear" id="btn-clear">Clear display</button>
+
+    <button class="btn-maintenance" id="btn-maintenance">Enable maintenance mode</button>
   </div>
   <script src="/pay-control.js"></script>
 </body>

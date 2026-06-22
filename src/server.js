@@ -34,6 +34,9 @@ let payClearTimer = null;
 const payClients = new Set();
 const PAY_IDLE_MS = 30_000;
 
+// Maintenance mode — broadcast to all pay/status/kiosk screens.
+let maintenanceMode = false;
+
 function logCollect(config, order) {
   if (!config.collectLog) return;
   const entry = {
@@ -64,6 +67,13 @@ function logIdCheck(config, orderRef, result) {
 
 function broadcastPayMessage() {
   const data = `data: ${JSON.stringify({ message: payMessage })}\n\n`;
+  for (const res of payClients) {
+    try { res.write(data); } catch { payClients.delete(res); }
+  }
+}
+
+function broadcastMaintenance() {
+  const data = `event: maintenance\ndata: ${JSON.stringify({ active: maintenanceMode })}\n\n`;
   for (const res of payClients) {
     try { res.write(data); } catch { payClients.delete(res); }
   }
@@ -310,6 +320,9 @@ export function createServer(config) {
         if (Object.keys(printerAlerts).length > 0) {
           res.write(`event: printer-alert\ndata: ${JSON.stringify({ alerts: printerAlerts })}\n\n`);
         }
+        if (maintenanceMode) {
+          res.write(`event: maintenance\ndata: ${JSON.stringify({ active: true })}\n\n`);
+        }
         payClients.add(res);
         req.on("close", () => payClients.delete(res));
         return;
@@ -365,6 +378,18 @@ export function createServer(config) {
       if (url.pathname === "/pay/clear" && req.method === "POST") {
         setPayMessage("");
         sendJson(res, 200, { ok: true });
+        return;
+      }
+
+      if (url.pathname === "/maintenance" && req.method === "POST") {
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        let body = {};
+        try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch {}
+        maintenanceMode = Boolean(body.active);
+        broadcastMaintenance();
+        console.log(`[maintenance] mode ${maintenanceMode ? "ON" : "OFF"}`);
+        sendJson(res, 200, { ok: true, active: maintenanceMode });
         return;
       }
 

@@ -166,10 +166,42 @@
 
       .board.glitching-h { animation: board-glitch-h 0.55s linear forwards; }
       .board.glitching-v { animation: board-glitch-v 0.55s linear forwards; }
+
+      #maintenance-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9998;
+        background: #000F00;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.5rem;
+      }
+      #maintenance-overlay[hidden] { display: none; }
+      .maintenance-title {
+        font-size: clamp(2rem, 8vw, 5rem);
+        font-weight: 700;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        color: #7CC142;
+        animation: maintenance-blink 1.4s step-end infinite;
+      }
+      .maintenance-sub {
+        font-size: clamp(0.65rem, 1.8vw, 0.9rem);
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: rgba(124,193,66,0.45);
+      }
+      @keyframes maintenance-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
     </style>
   </head>
   <body>
     <div class="crt-overlay" aria-hidden="true"></div>
+    <div id="maintenance-overlay" hidden aria-live="assertive">
+      <p class="maintenance-title">TERMINAL OFFLINE</p>
+      <p class="maintenance-sub">FACILITY CLOSED — STAND BY</p>
+    </div>
     <header>
       <span class="header-dim">Polybius Biotech Galactic Trade Network //</span><span class="header-graffiti">space</span><span class="header-dim">Base Asset Retrieval System // Transaction Status</span>
     </header>

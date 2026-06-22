@@ -77,6 +77,13 @@ function connect() {
     } catch {}
   };
 
+  es.addEventListener("maintenance", e => {
+    try {
+      const { active } = JSON.parse(e.data);
+      document.getElementById("maintenance-overlay").hidden = !active;
+    } catch {}
+  });
+
   es.addEventListener("order-loaded", e => {
     try {
       const { order_ref, soft_only } = JSON.parse(e.data);

@@ -41,3 +41,21 @@ async function refreshLoop() {
 }
 
 refreshLoop();
+
+let maintenanceReconnectDelay = 3000;
+function connectMaintenance() {
+  const es = new EventSource("/pay/events");
+  es.addEventListener("maintenance", e => {
+    try {
+      const { active } = JSON.parse(e.data);
+      document.getElementById("maintenance-overlay").hidden = !active;
+      maintenanceReconnectDelay = 3000;
+    } catch {}
+  });
+  es.onerror = () => {
+    es.close();
+    setTimeout(connectMaintenance, maintenanceReconnectDelay);
+    maintenanceReconnectDelay = Math.min(maintenanceReconnectDelay * 2, 30_000);
+  };
+}
+connectMaintenance();
