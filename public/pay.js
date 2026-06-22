@@ -1,3 +1,24 @@
+let maintenanceGlitchTimer = null;
+
+function scheduleMaintenanceGlitch() {
+  maintenanceGlitchTimer = setTimeout(() => {
+    const titleEl = document.querySelector('.maintenance-title');
+    if (titleEl) {
+      titleEl.classList.add('glitching');
+      titleEl.addEventListener('animationend', () => {
+        titleEl.classList.remove('glitching');
+        scheduleMaintenanceGlitch();
+      }, { once: true });
+    }
+  }, 3_000 + Math.random() * 9_000);
+}
+
+function stopMaintenanceGlitch() {
+  clearTimeout(maintenanceGlitchTimer);
+  maintenanceGlitchTimer = null;
+  document.querySelector('.maintenance-title')?.classList.remove('glitching');
+}
+
 const messageEl = document.getElementById("message");
 const subtitleEl = document.getElementById("subtitle");
 const ghostEl    = document.getElementById("ghost-layer");
@@ -79,8 +100,14 @@ function connect() {
 
   es.addEventListener("maintenance", e => {
     try {
-      const { active } = JSON.parse(e.data);
+      const { active, reopeningAt } = JSON.parse(e.data);
       document.getElementById("maintenance-overlay").hidden = !active;
+      const reopenEl = document.getElementById("maintenance-reopen");
+      if (reopenEl) {
+        reopenEl.hidden = !active || !reopeningAt;
+        reopenEl.textContent = reopeningAt ? `REOPENING ${reopeningAt}` : "";
+      }
+      if (active) scheduleMaintenanceGlitch(); else stopMaintenanceGlitch();
     } catch {}
   });
 

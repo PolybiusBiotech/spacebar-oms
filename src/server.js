@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import http from "node:http";
-import { appendFileSync } from "node:fs";
+import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -15,6 +15,12 @@ const MIME_TYPES = {
 };
 
 const COLLECT_TIMEOUT_MS = 2 * 60 * 1000;
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const MAINTENANCE_FILE = process.env.OMS_MAINTENANCE_STATE
+  || path.join(__dirname, "..", "maintenance.json");
+const KIOSK_MAINTENANCE_FILE = process.env.OMS_KIOSK_MAINTENANCE_STATE
+  || path.join(__dirname, "..", "kiosk-maintenance.json");
 
 // In-memory order state.
 // Map<order_ref, { ...tillwebFields, state: 'pending'|'processing'|'collect', collectAt: number|null }>
@@ -34,8 +40,40 @@ let payClearTimer = null;
 const payClients = new Set();
 const PAY_IDLE_MS = 30_000;
 
-// Maintenance mode — broadcast to all pay/status/kiosk screens.
+// OMS-wide maintenance — affects all screens including OMS displays.
+// Kiosk-only maintenance — affects kiosks/badge only; OMS displays stay live for order collection.
 let maintenanceMode = false;
+let maintenanceReopeningAt = "";
+let kioskMaintenanceMode = false;
+let kioskMaintenanceReopeningAt = "";
+
+try {
+  const saved = JSON.parse(readFileSync(MAINTENANCE_FILE, "utf8"));
+  maintenanceMode = Boolean(saved.active);
+  maintenanceReopeningAt = String(saved.reopeningAt ?? "");
+} catch { /* no file yet */ }
+
+try {
+  const saved = JSON.parse(readFileSync(KIOSK_MAINTENANCE_FILE, "utf8"));
+  kioskMaintenanceMode = Boolean(saved.active);
+  kioskMaintenanceReopeningAt = String(saved.reopeningAt ?? "");
+} catch { /* no file yet */ }
+
+function saveMaintenanceState() {
+  try {
+    writeFileSync(MAINTENANCE_FILE, JSON.stringify({ active: maintenanceMode, reopeningAt: maintenanceReopeningAt }), "utf8");
+  } catch (err) {
+    console.error(`[maintenance] Failed to save state: ${err.message}`);
+  }
+}
+
+function saveKioskMaintenanceState() {
+  try {
+    writeFileSync(KIOSK_MAINTENANCE_FILE, JSON.stringify({ active: kioskMaintenanceMode, reopeningAt: kioskMaintenanceReopeningAt }), "utf8");
+  } catch (err) {
+    console.error(`[kiosk-maintenance] Failed to save state: ${err.message}`);
+  }
+}
 
 function logCollect(config, order) {
   if (!config.collectLog) return;
@@ -73,7 +111,14 @@ function broadcastPayMessage() {
 }
 
 function broadcastMaintenance() {
-  const data = `event: maintenance\ndata: ${JSON.stringify({ active: maintenanceMode })}\n\n`;
+  const data = `event: maintenance\ndata: ${JSON.stringify({ active: maintenanceMode, reopeningAt: maintenanceReopeningAt })}\n\n`;
+  for (const res of payClients) {
+    try { res.write(data); } catch { payClients.delete(res); }
+  }
+}
+
+function broadcastKioskOnlyMaintenance() {
+  const data = `event: kiosk-maintenance\ndata: ${JSON.stringify({ active: kioskMaintenanceMode, reopeningAt: kioskMaintenanceReopeningAt })}\n\n`;
   for (const res of payClients) {
     try { res.write(data); } catch { payClients.delete(res); }
   }
@@ -263,13 +308,16 @@ export function createServer(config) {
       }
 
       if (url.pathname === "/api/orders" && req.method === "GET") {
+        const kioskMaint = (maintenanceMode || kioskMaintenanceMode)
+          ? { active: true, reopeningAt: maintenanceMode ? maintenanceReopeningAt : kioskMaintenanceReopeningAt }
+          : { active: false };
         const ref = url.searchParams.get("order");
         if (ref) {
           const o = orderState.get(ref);
           if (!o) {
-            sendJson(res, 404, { error: "not-found" });
+            sendJson(res, 404, { error: "not-found", kiosk_maintenance: kioskMaint });
           } else {
-            sendJson(res, 200, { order: { order_ref: o.order_ref, state: o.state } });
+            sendJson(res, 200, { order: { order_ref: o.order_ref, state: o.state }, kiosk_maintenance: kioskMaint });
           }
           return;
         }
@@ -281,7 +329,7 @@ export function createServer(config) {
           created_at: o.created_at,
           state: o.state
         }));
-        sendJson(res, 200, { orders, printer_alerts: printerAlerts });
+        sendJson(res, 200, { orders, printer_alerts: printerAlerts, kiosk_maintenance: kioskMaint });
         return;
       }
 
@@ -321,7 +369,10 @@ export function createServer(config) {
           res.write(`event: printer-alert\ndata: ${JSON.stringify({ alerts: printerAlerts })}\n\n`);
         }
         if (maintenanceMode) {
-          res.write(`event: maintenance\ndata: ${JSON.stringify({ active: true })}\n\n`);
+          res.write(`event: maintenance\ndata: ${JSON.stringify({ active: true, reopeningAt: maintenanceReopeningAt })}\n\n`);
+        }
+        if (kioskMaintenanceMode) {
+          res.write(`event: kiosk-maintenance\ndata: ${JSON.stringify({ active: true, reopeningAt: kioskMaintenanceReopeningAt })}\n\n`);
         }
         payClients.add(res);
         req.on("close", () => payClients.delete(res));
@@ -387,14 +438,30 @@ export function createServer(config) {
         let body = {};
         try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch {}
         maintenanceMode = Boolean(body.active);
+        if (body.reopeningAt !== undefined) maintenanceReopeningAt = String(body.reopeningAt ?? "");
+        saveMaintenanceState();
         broadcastMaintenance();
-        console.log(`[maintenance] mode ${maintenanceMode ? "ON" : "OFF"}`);
-        sendJson(res, 200, { ok: true, active: maintenanceMode });
+        console.log(`[maintenance] mode ${maintenanceMode ? "ON" : "OFF"}${maintenanceReopeningAt ? ` reopening ${maintenanceReopeningAt}` : ""}`);
+        sendJson(res, 200, { ok: true, active: maintenanceMode, reopeningAt: maintenanceReopeningAt });
+        return;
+      }
+
+      if (url.pathname === "/kiosk-maintenance" && req.method === "POST") {
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        let body = {};
+        try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch {}
+        kioskMaintenanceMode = Boolean(body.active);
+        if (body.reopeningAt !== undefined) kioskMaintenanceReopeningAt = String(body.reopeningAt ?? "");
+        saveKioskMaintenanceState();
+        broadcastKioskOnlyMaintenance();
+        console.log(`[kiosk-maintenance] mode ${kioskMaintenanceMode ? "ON" : "OFF"}${kioskMaintenanceReopeningAt ? ` reopening ${kioskMaintenanceReopeningAt}` : ""}`);
+        sendJson(res, 200, { ok: true, active: kioskMaintenanceMode, reopeningAt: kioskMaintenanceReopeningAt });
         return;
       }
 
       // Clean URLs for the OMS screens
-      const rewrites = { "/status": "/status.html", "/staff": "/staff.html", "/pay": "/pay.html", "/pay/control": "/pay-control.html", "/control": "/pay-control.html" };
+      const rewrites = { "/status": "/status.html", "/customer": "/status.html", "/staff": "/staff.html", "/pay": "/pay.html", "/control": "/control.html", "/pay/control": "/control.html" };
       if (rewrites[url.pathname]) req.url = rewrites[url.pathname];
 
       if (req.method === "GET" || req.method === "HEAD") {

@@ -1,20 +1,59 @@
 const currentEl = document.getElementById("current-message");
 const btnMaintenance = document.getElementById("btn-maintenance");
+const btnKioskMaintenance = document.getElementById("btn-kiosk-maintenance");
+const reopenTimeInput = document.getElementById("reopen-time");
 let maintenanceActive = false;
+let kioskMaintenanceActive = false;
 
 btnMaintenance.addEventListener("click", () => {
+  const enabling = !maintenanceActive;
   fetch("/maintenance", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ active: !maintenanceActive })
+    body: JSON.stringify({ active: enabling, reopeningAt: reopenTimeInput.value || "" })
   }).catch(err => console.error("maintenance toggle failed:", err));
+});
+
+btnKioskMaintenance.addEventListener("click", () => {
+  const enabling = !kioskMaintenanceActive;
+  fetch("/kiosk-maintenance", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ active: enabling, reopeningAt: reopenTimeInput.value || "" })
+  }).catch(err => console.error("kiosk maintenance toggle failed:", err));
+});
+
+// Live-update reopening time in whichever mode(s) are currently active
+reopenTimeInput.addEventListener("input", () => {
+  const t = reopenTimeInput.value;
+  if (maintenanceActive) {
+    fetch("/maintenance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ active: true, reopeningAt: t })
+    }).catch(() => {});
+  }
+  if (kioskMaintenanceActive) {
+    fetch("/kiosk-maintenance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ active: true, reopeningAt: t })
+    }).catch(() => {});
+  }
 });
 
 function setMaintenanceUI(active) {
   maintenanceActive = active;
-  btnMaintenance.textContent = active ? "Disable maintenance mode" : "Enable maintenance mode";
+  btnMaintenance.textContent = active ? "Disable full maintenance" : "Enable full maintenance";
   btnMaintenance.classList.toggle("btn-maintenance--active", active);
 }
+
+function setKioskMaintenanceUI(active) {
+  kioskMaintenanceActive = active;
+  btnKioskMaintenance.textContent = active ? "Disable kiosk maintenance" : "Enable kiosk maintenance";
+  btnKioskMaintenance.classList.toggle("btn-kiosk-maintenance--active", active);
+}
+
 const printerAlertsEl = document.getElementById("printer-alerts");
 
 function renderPrinterAlerts(alerts) {
@@ -52,8 +91,6 @@ function renderPrinterAlerts(alerts) {
 const customInput = document.getElementById("custom-input");
 const btnSend = document.getElementById("btn-send");
 const btnClear = document.getElementById("btn-clear");
-
-// --- SSE: keep current message in sync ---
 
 let orderAlertTimer = null;
 let audioCtx = null;
@@ -121,7 +158,6 @@ btnIdReject.addEventListener("click", async () => {
   });
 });
 
-
 let currentDisplayMessage = "";
 let reconnectDelay = 3000;
 const RECONNECT_BASE = 3000;
@@ -157,7 +193,12 @@ function connect() {
       setMaintenanceUI(active);
     } catch {}
   });
-
+  es.addEventListener("kiosk-maintenance", e => {
+    try {
+      const { active } = JSON.parse(e.data);
+      setKioskMaintenanceUI(active);
+    } catch {}
+  });
   es.addEventListener("printer-alert", e => {
     try {
       const { alerts } = JSON.parse(e.data);
@@ -173,8 +214,6 @@ function connect() {
 
 connect();
 
-// --- Send message ---
-
 async function sendMessage(msg) {
   await fetch("/pay/message", {
     method: "POST",
@@ -188,14 +227,12 @@ document.querySelectorAll(".preset[data-lore-msg]").forEach(btn => {
     const loreMsg  = btn.dataset.loreMsg.replace(/\|/g, "\n");
     const plainMsg = btn.dataset.plainMsg.replace(/\|/g, "\n");
 
-    // Second tap on an active lore preset → send the plain/serious version
     const msg = (currentDisplayMessage === loreMsg && plainMsg !== loreMsg)
       ? plainMsg
       : loreMsg;
 
     sendMessage(msg);
 
-    // Either ID preset triggers the id_requested audit event
     if (loreMsg === "PRESENT 'EMPLOYEE' ID" && currentOrderRef) {
       fetch(`/api/orders/${encodeURIComponent(currentOrderRef)}/id-check`, {
         method: "POST",

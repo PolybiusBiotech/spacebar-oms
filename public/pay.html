@@ -175,7 +175,7 @@
       letter-spacing: 0.25em;
       text-transform: uppercase;
       color: #7CC142;
-      animation: maintenance-blink 1.4s step-end infinite;
+      text-align: center;
     }
     .maintenance-sub {
       font-size: clamp(0.7rem, 2.5vw, 1rem);
@@ -183,7 +183,25 @@
       text-transform: uppercase;
       color: rgba(124,193,66,0.45);
     }
-    @keyframes maintenance-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    .maintenance-reopen {
+      font-size: clamp(0.85rem, 3vw, 1.25rem);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(124,193,66,0.7);
+    }
+    @keyframes maintenance-glitch-h {
+      0%   { transform: translate(0,0) skewX(0); filter: none; opacity: 1; }
+      7%   { transform: translate(-14px,0) skewX(-3deg); filter: drop-shadow(7px 0 0 rgba(255,0,128,0.9)) drop-shadow(-7px 0 0 rgba(0,220,255,0.9)); }
+      16%  { transform: translate(11px,0) skewX(2.5deg); filter: drop-shadow(-6px 0 0 rgba(255,0,128,0.8)) drop-shadow(6px 0 0 rgba(0,220,255,0.8)); }
+      24%  { transform: translate(0,0) skewX(0); filter: none; }
+      57%  { opacity: 1; }
+      61%  { opacity: 0; transform: translate(10px,0) skewX(-2deg); filter: drop-shadow(-6px 0 0 rgba(0,220,255,0.85)); }
+      65%  { opacity: 1; transform: translate(0,0); filter: none; }
+      69%  { opacity: 0; transform: translate(-6px,0); }
+      73%  { opacity: 1; transform: translate(0,0); }
+      100% { transform: translate(0,0) skewX(0); filter: none; opacity: 1; }
+    }
+    .maintenance-title.glitching { animation: maintenance-glitch-h 0.55s linear forwards; }
 
     #subtitle {
       display: none;
@@ -221,6 +239,7 @@
   <div id="maintenance-overlay" hidden aria-live="assertive">
     <p class="maintenance-title">TERMINAL OFFLINE</p>
     <p class="maintenance-sub">FACILITY CLOSED — STAND BY</p>
+    <p id="maintenance-reopen" class="maintenance-reopen" hidden></p>
   </div>
 
   <div id="pay-display">

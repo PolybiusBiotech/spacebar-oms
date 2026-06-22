@@ -44,6 +44,11 @@ PAYMENT PROCESSED · PLEASE WAIT · NEXT CUSTOMER
 | `order-loaded` | `/control` only | `{ order_ref, soft_only }` |
 | `help` | `/control` only | `{}` |
 | `printer-alert` | `/control` only | `{ alerts: { location: { message, at } } }` |
+| `maintenance` | `/pay`, `/customer`, `/control`, kiosk | `{ active, reopeningAt }` — maintenance mode state; replayed on SSE reconnect |
+
+### SSE events on `/api/events` (kiosk proxy)
+
+The kiosk server subscribes to `/pay/events` on startup and re-broadcasts `maintenance` events to its own connected frontend over `/api/events`. The kiosk never needs a direct connection to OMS.
 
 ## Runtime shape
 
@@ -82,6 +87,17 @@ PAYMENT PROCESSED · PLEASE WAIT · NEXT CUSTOMER
 | `POST /pay/clear` | none (VLAN-only) | Reset display to PAY HERE immediately. |
 | `POST /pay/help` | none (VLAN-only) | Customer help request. Sets PLEASE WAIT; fires `help` SSE event. |
 | `POST /pay/order-loaded` | none (VLAN-only) | Body: `{ order_ref, soft_only }`. Called by quicktill-kiosk-plugin on scan. |
+
+### Maintenance mode
+
+| Endpoint | Auth | Notes |
+|---|---|---|
+| `GET /maintenance` | none | Returns `{ active, reopeningAt }` |
+| `POST /maintenance` | none (VLAN-only) | Body: `{ active, reopeningAt? }`. Sets/clears maintenance mode; persisted to `maintenance.json`; broadcast as `maintenance` SSE event to all subscribers. `reopeningAt` is a time string (`"01:30"`) displayed on the overlay. |
+
+When active, a full-screen "TERMINAL OFFLINE" overlay appears on `/pay`, `/customer`, and the kiosk. The overlay shows the reopening time if set. The state survives server restarts.
+
+Control is via the maintenance card at the bottom of `/pay/control`: select a reopening time then click **Enable maintenance mode**. Disable in the same place.
 
 ### Health
 

@@ -1,3 +1,24 @@
+let maintenanceGlitchTimer = null;
+
+function scheduleMaintenanceGlitch() {
+  maintenanceGlitchTimer = setTimeout(() => {
+    const titleEl = document.querySelector('.maintenance-title');
+    if (titleEl) {
+      titleEl.classList.add('glitching');
+      titleEl.addEventListener('animationend', () => {
+        titleEl.classList.remove('glitching');
+        scheduleMaintenanceGlitch();
+      }, { once: true });
+    }
+  }, 3_000 + Math.random() * 9_000);
+}
+
+function stopMaintenanceGlitch() {
+  clearTimeout(maintenanceGlitchTimer);
+  maintenanceGlitchTimer = null;
+  document.querySelector('.maintenance-title')?.classList.remove('glitching');
+}
+
 function escapeHtml(v) {
   return String(v ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
@@ -47,8 +68,14 @@ function connectMaintenance() {
   const es = new EventSource("/pay/events");
   es.addEventListener("maintenance", e => {
     try {
-      const { active } = JSON.parse(e.data);
+      const { active, reopeningAt } = JSON.parse(e.data);
       document.getElementById("maintenance-overlay").hidden = !active;
+      const reopenEl = document.getElementById("maintenance-reopen");
+      if (reopenEl) {
+        reopenEl.hidden = !active || !reopeningAt;
+        reopenEl.textContent = reopeningAt ? `REOPENING ${reopeningAt}` : "";
+      }
+      if (active) scheduleMaintenanceGlitch(); else stopMaintenanceGlitch();
       maintenanceReconnectDelay = 3000;
     } catch {}
   });
