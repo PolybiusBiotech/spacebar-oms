@@ -178,8 +178,10 @@ function connect() {
       currentDisplayMessage = message || "";
       currentEl.textContent = message || "—";
       document.querySelectorAll(".preset[data-lore-msg]").forEach(b => {
-        const lorActive  = b.dataset.loreMsg  === message;
-        const plainActive = b.dataset.plainMsg === message && b.dataset.loreMsg !== message;
+        const lore  = b.dataset.loreMsg.replace(/\|/g, "\n");
+        const plain = b.dataset.plainMsg.replace(/\|/g, "\n");
+        const lorActive  = lore  === message;
+        const plainActive = plain === message && lore !== message;
         b.classList.toggle("preset--active-lore",  lorActive);
         b.classList.toggle("preset--active-plain", plainActive);
       });
@@ -213,14 +215,14 @@ async function sendMessage(msg) {
   await fetch("/pay/message", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message: msg })
+    body: JSON.stringify({ message: msg.replace(/\|/g, "\n") })
   });
 }
 
 document.querySelectorAll(".preset[data-lore-msg]").forEach(btn => {
   btn.addEventListener("click", () => {
-    const loreMsg  = btn.dataset.loreMsg;
-    const plainMsg = btn.dataset.plainMsg;
+    const loreMsg  = btn.dataset.loreMsg.replace(/\|/g, "\n");
+    const plainMsg = btn.dataset.plainMsg.replace(/\|/g, "\n");
 
     // Second tap on an active lore preset → send the plain/serious version
     const msg = (currentDisplayMessage === loreMsg && plainMsg !== loreMsg)
