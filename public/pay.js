@@ -1,6 +1,5 @@
 const messageEl = document.getElementById("message");
 const subtitleEl = document.getElementById("subtitle");
-const helpBtn    = document.getElementById("help-btn");
 const ghostEl    = document.getElementById("ghost-layer");
 
 let currentMessage = "PAY HERE";
@@ -93,7 +92,3 @@ function connect() {
 }
 
 connect();
-
-helpBtn.addEventListener("click", () => {
-  fetch("/pay/help", { method: "POST" });
-});

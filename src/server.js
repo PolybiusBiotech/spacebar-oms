@@ -34,17 +34,6 @@ let payClearTimer = null;
 const payClients = new Set();
 const PAY_IDLE_MS = 30_000;
 
-// Help-pending state — survives SSE reconnects.
-let helpPending = false;
-let helpClearTimer = null;
-const HELP_TIMEOUT_MS = 120_000;
-
-function clearHelp() {
-  helpPending = false;
-  clearTimeout(helpClearTimer);
-  helpClearTimer = null;
-}
-
 function logCollect(config, order) {
   if (!config.collectLog) return;
   const entry = {
@@ -321,9 +310,6 @@ export function createServer(config) {
         if (Object.keys(printerAlerts).length > 0) {
           res.write(`event: printer-alert\ndata: ${JSON.stringify({ alerts: printerAlerts })}\n\n`);
         }
-        if (helpPending) {
-          res.write(`event: help\ndata: {}\n\n`);
-        }
         payClients.add(res);
         req.on("close", () => payClients.delete(res));
         return;
@@ -363,23 +349,6 @@ export function createServer(config) {
           );
         }
         sendJson(res, 200, { ok: true, order_ref: ref, result });
-        return;
-      }
-
-      if (url.pathname === "/pay/help" && req.method === "POST") {
-        helpPending = true;
-        clearTimeout(helpClearTimer);
-        helpClearTimer = setTimeout(clearHelp, HELP_TIMEOUT_MS);
-        setPayMessage("PLEASE WAIT");
-        const helpAlert = `event: help\ndata: {}\n\n`;
-        for (const client of payClients) client.write(helpAlert);
-        sendJson(res, 200, { ok: true });
-        return;
-      }
-
-      if (url.pathname === "/pay/help/clear" && req.method === "POST") {
-        clearHelp();
-        sendJson(res, 200, { ok: true });
         return;
       }
 

@@ -39,7 +39,6 @@ const btnClear = document.getElementById("btn-clear");
 
 // --- SSE: keep current message in sync ---
 
-let helpAlertTimer = null;
 let orderAlertTimer = null;
 let audioCtx = null;
 let masterGain = null;
@@ -57,24 +56,6 @@ function getAudio() {
     masterGain.connect(audioCtx.destination);
   }
   return { ctx: audioCtx, master: masterGain };
-}
-
-function playHelpBeep() {
-  try {
-    const { ctx, master } = getAudio();
-    master.gain.setValueAtTime(1, ctx.currentTime);
-    [0, 0.18, 0.36].forEach(offset => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(master);
-      osc.frequency.value = 880;
-      gain.gain.setValueAtTime(0.6, ctx.currentTime + offset);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.15);
-      osc.start(ctx.currentTime + offset);
-      osc.stop(ctx.currentTime + offset + 0.15);
-    });
-  } catch {}
 }
 
 function playOrderBeep() {
@@ -124,44 +105,6 @@ btnIdReject.addEventListener("click", async () => {
   });
 });
 
-function triggerFlash() {
-  document.body.classList.remove("help-alert");
-  void document.body.offsetWidth;
-  document.body.classList.add("help-alert");
-  document.body.addEventListener("animationend", () => {
-    document.body.classList.remove("help-alert");
-  }, { once: true });
-}
-
-function startHelpAlert() {
-  stopHelpAlert();
-  playHelpBeep();
-  triggerFlash();
-  helpAlertTimer = setInterval(() => {
-    playHelpBeep();
-    triggerFlash();
-  }, 2500);
-}
-
-function stopHelpAlert() {
-  clearInterval(helpAlertTimer);
-  helpAlertTimer = null;
-  document.body.classList.remove("help-alert");
-  if (masterGain) {
-    masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
-    masterGain.gain.value = 0;
-  }
-}
-
-function acknowledgeHelp() {
-  stopHelpAlert();
-  fetch("/pay/help/clear", { method: "POST" }).catch(() => {});
-}
-
-// Any staff action acknowledges the alert
-document.addEventListener("click", e => {
-  if (helpAlertTimer && e.target.closest("button, input")) acknowledgeHelp();
-}, { capture: true });
 
 let currentDisplayMessage = "";
 let reconnectDelay = 3000;
@@ -169,7 +112,6 @@ const RECONNECT_BASE = 3000;
 const RECONNECT_MAX  = 30_000;
 
 function connect() {
-  stopHelpAlert();
   const es = new EventSource("/pay/events");
   es.onmessage = e => {
     try {
@@ -187,7 +129,6 @@ function connect() {
       });
     } catch {}
   };
-  es.addEventListener("help", startHelpAlert);
   es.addEventListener("order-loaded", e => {
     try {
       const { order_ref, soft_only } = JSON.parse(e.data);
