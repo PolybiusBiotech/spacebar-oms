@@ -13,7 +13,7 @@ const RECONNECT_MAX  = 30_000;
 const PLAIN_MESSAGES = new Set([
   "PRESENT ID",
   "REJECTED",
-  "APPROVED — PAY BELOW",
+  "APPROVED\nPAY BELOW",
   "PAYMENT PROCESSED",
   "PLEASE WAIT",
   "NEXT CUSTOMER",
@@ -28,8 +28,10 @@ function escapeHtml(str) {
 function renderMessageHtml(msg) {
   if (!msg || msg === "PAY HERE") return "INSERT PAYMENT CREDIT HERE";
   const safe = escapeHtml(msg);
-  return safe.replace(/'([^']+)'/g,
-    `<span class="spray-quoted"><span class="graffiti-quote">&#x201C;</span>$1<span class="graffiti-quote">&#x201D;</span></span>`);
+  return safe
+    .replace(/\n/g, '<br>')
+    .replace(/'([^']+)'/g,
+      `<span class="spray-quoted"><span class="graffiti-quote">&#x201C;</span>$1<span class="graffiti-quote">&#x201D;</span></span>`);
 }
 
 function applyMessage(msg) {
