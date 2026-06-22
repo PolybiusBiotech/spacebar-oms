@@ -1,3 +1,9 @@
+@font-face {
+  font-family: 'PermanentMarker';
+  src: url('/fonts/permanent-marker.woff2') format('woff2');
+  font-weight: 400;
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
