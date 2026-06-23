@@ -17,7 +17,7 @@ live state of all kiosk orders — from creation through payment to collection.
 |---|---|---|
 | `/staff` | Staff tablet | Live order board — unpaid, processing, collect columns |
 | `/customer` | Customer display | Order collection screen |
-| `/pay` | iPhone at bar | Full-screen message display; "Need help?" button |
+| `/pay` | iPhone at bar | Full-screen message display |
 | `/control` | Staff screen at till | Send messages to payment instruction screen; order-loaded + printer alerts |
 | `/pay/control` | Staff screen at till | Same as `/control` |
 
@@ -30,8 +30,6 @@ PAYMENT PROCESSED · PLEASE WAIT · NEXT CUSTOMER
 
 **Idle timeout:** non-default messages auto-clear back to PAY HERE after 30 seconds of inactivity.
 
-**Help button:** the customer taps "Need help?" on the iPhone. This sets PLEASE WAIT with no idle timeout and fires a named SSE `help` event to all control-page clients, triggering a repeating red flash + triple beep until staff acknowledge by pressing any button. Server tracks `helpPending` state and replays the event on reconnect so the alert is never silently lost.
-
 **Order-loaded alert:** when the barcode scanner at the till reads a QR/slip, the recall plugin fires `POST /pay/order-loaded`. The control page shows a 5-second pop-up with the order ref and an "ID Rejected" shortcut button. Soft-only orders show a green "auto pay" variant.
 
 **Printer alerts:** when a kiosk printer fails it POSTs to `POST /api/printer-alert`. The control page shows a persistent orange banner per kiosk. Staff clear it with the "Clear" button once the printer is fixed. Alerts are pushed over SSE and replayed on reconnect. They do **not** appear on the customer-facing `/pay` display.
@@ -42,9 +40,9 @@ PAYMENT PROCESSED · PLEASE WAIT · NEXT CUSTOMER
 |---|---|---|
 | *(unnamed message)* | `/pay` and `/control` | `{ message }` — current display text |
 | `order-loaded` | `/control` only | `{ order_ref, soft_only }` |
-| `help` | `/control` only | `{}` |
 | `printer-alert` | `/control` only | `{ alerts: { location: { message, at } } }` |
 | `maintenance` | `/pay`, `/customer`, `/control`, kiosk | `{ active, reopeningAt }` — maintenance mode state; replayed on SSE reconnect |
+| `kiosk-maintenance` | kiosk, badge | `{ active, reopeningAt }` — kiosk-only maintenance; OMS screens unaffected; replayed on reconnect |
 
 ### SSE events on `/api/events` (kiosk proxy)
 
@@ -85,15 +83,14 @@ The kiosk server subscribes to `/pay/events` on startup and re-broadcasts `maint
 | `GET /pay/events` | none | SSE stream. See SSE events table above. |
 | `POST /pay/message` | none (VLAN-only) | Body: `{ message }`. Pushes to display, resets idle timer. |
 | `POST /pay/clear` | none (VLAN-only) | Reset display to PAY HERE immediately. |
-| `POST /pay/help` | none (VLAN-only) | Customer help request. Sets PLEASE WAIT; fires `help` SSE event. |
 | `POST /pay/order-loaded` | none (VLAN-only) | Body: `{ order_ref, soft_only }`. Called by quicktill-kiosk-plugin on scan. |
 
 ### Maintenance mode
 
 | Endpoint | Auth | Notes |
 |---|---|---|
-| `GET /maintenance` | none | Returns `{ active, reopeningAt }` |
-| `POST /maintenance` | none (VLAN-only) | Body: `{ active, reopeningAt? }`. Sets/clears maintenance mode; persisted to `maintenance.json`; broadcast as `maintenance` SSE event to all subscribers. `reopeningAt` is a time string (`"01:30"`) displayed on the overlay. |
+| `POST /maintenance` | none (VLAN-only) | Body: `{ active, reopeningAt? }`. Sets/clears maintenance mode; persisted to `maintenance.json`; broadcast as `maintenance` SSE event to all subscribers. `reopeningAt` is an `"HH:MM"` time string; the kiosk overlay shows a live countdown to that time. |
+| `POST /kiosk-maintenance` | none (VLAN-only) | Body: `{ active, reopeningAt? }`. Sets/clears kiosk-only maintenance mode; persisted to `kiosk-maintenance.json`; broadcast as `kiosk-maintenance` SSE event. Kiosks and badges see the "TERMINAL OFFLINE" overlay with countdown; OMS screens (`/staff`, `/customer`, `/pay`) stay live. |
 
 When active, a full-screen "TERMINAL OFFLINE" overlay appears on `/pay`, `/customer`, and the kiosk. The overlay shows the reopening time if set. The state survives server restarts.
 
@@ -131,7 +128,7 @@ Required settings:
 
 - `TILLWEB_BASE_URL`: tillweb base URL.
 - `TILLWEB_TOKEN`: bearer token from `emftillweb`'s `[kiosk.tokens]` config.
-- `OMS_LOCATION`: tillweb location to watch, default `spacebar`. **Production value is `Spacebar` (capital S) — must match the `location` in `emftillweb.toml` token config and the `LOCATION` constant in the badge app.**
+- `OMS_LOCATION`: tillweb location to watch, default `spacebar`. **Production value is `Spacebar` (capital S) — must match an entry in the `locations = [...]` list in `emftillweb.toml` token config and the `LOCATION` constant in the badge app.**
 
 ## Operations
 

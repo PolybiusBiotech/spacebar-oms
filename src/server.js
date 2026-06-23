@@ -23,7 +23,7 @@ const KIOSK_MAINTENANCE_FILE = process.env.OMS_KIOSK_MAINTENANCE_STATE
   || path.join(__dirname, "..", "kiosk-maintenance.json");
 
 // In-memory order state.
-// Map<order_ref, { ...tillwebFields, state: 'pending'|'processing'|'collect', collectAt: number|null }>
+// Map<order_ref, { ...tillwebFields, state: 'unpaid'|'processing'|'collect', collectAt: number|null }>
 const orderState = new Map();
 
 // Refs that have been collected — never re-enter the state machine after collect timeout.
