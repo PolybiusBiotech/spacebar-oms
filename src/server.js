@@ -327,13 +327,14 @@ export function createServer(config) {
           total: o.total,
           lines: o.lines,
           created_at: o.created_at,
-          state: o.state
+          state: o.state,
+          hatch: o.hatch ?? null
         }));
         sendJson(res, 200, { orders, printer_alerts: printerAlerts, kiosk_maintenance: kioskMaint });
         return;
       }
 
-      // Operator marks an order as ready for collection.
+      // Operator marks an order as ready for collection, assigning a hatch (1-8).
       const collectMatch = url.pathname.match(/^\/api\/orders\/([^/]+)\/collect$/);
       if (collectMatch && req.method === "POST") {
         const ref = collectMatch[1];
@@ -346,14 +347,23 @@ export function createServer(config) {
           sendJson(res, 409, { error: "wrong-state", message: `Order is ${order.state}, not processing.` });
           return;
         }
-        const collected = { ...order, state: "collect", collectAt: Date.now() };
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        let body = {};
+        try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch {}
+        const hatch = Number(body.hatch);
+        if (!Number.isInteger(hatch) || hatch < 1 || hatch > 8) {
+          sendJson(res, 400, { error: "bad-hatch", message: "hatch must be an integer 1–8." });
+          return;
+        }
+        const collected = { ...order, state: "collect", collectAt: Date.now(), hatch };
         orderState.set(ref, collected);
         collectedRefs.add(ref);
         logCollect(config, collected);
         markCollected(config, ref).catch(err =>
           console.error(`[collect] Failed to mark ${ref} collected in tillweb: ${err.message}`)
         );
-        sendJson(res, 200, { order_ref: ref, state: "collect" });
+        sendJson(res, 200, { order_ref: ref, state: "collect", hatch });
         return;
       }
 
@@ -461,6 +471,9 @@ export function createServer(config) {
       }
 
       // Clean URLs for the OMS screens
+      const hatchRouteMatch = url.pathname.match(/^\/hatch\/([1-8])$/);
+      if (hatchRouteMatch) { req.url = "/hatch.html"; await serveStatic(config, req, res); return; }
+
       const rewrites = { "/status": "/status.html", "/customer": "/status.html", "/staff": "/staff.html", "/pay": "/pay.html", "/control": "/control.html", "/pay/control": "/control.html" };
       if (rewrites[url.pathname]) req.url = rewrites[url.pathname];
 

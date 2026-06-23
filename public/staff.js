@@ -15,21 +15,45 @@ function renderLines(lines) {
   ).join("")}</ul>`;
 }
 
-function renderOrder(order) {
-  const collectBtn = order.state === "processing"
-    ? `<button class="collect-btn" data-collect="${escapeHtml(order.order_ref)}">Ready to collect ✓</button>`
-    : "";
+function renderOrder(order, occupiedHatches) {
+  let footer = "";
+  if (order.state === "processing") {
+    footer = `<button class="collect-btn" data-collect="${escapeHtml(order.order_ref)}">Ready to collect ✓</button>`;
+  } else if (order.state === "collect" && order.hatch) {
+    footer = `<div class="order-hatch">Hatch ${escapeHtml(String(order.hatch))}</div>`;
+  }
   return `
     <div class="order order--${escapeHtml(order.state)}" data-ref="${escapeHtml(order.order_ref)}">
       <div class="order-name">${escapeHtml(order.order_name)}</div>
       <div class="order-total">£${escapeHtml(order.total)}</div>
       ${order.state !== "unpaid" ? renderLines(order.lines) : ""}
-      ${collectBtn}
+      ${footer}
     </div>`;
 }
 
-async function markCollect(ref) {
-  const res = await fetch(`/api/orders/${encodeURIComponent(ref)}/collect`, { method: "POST" });
+function renderHatchPicker(ref, occupiedHatches) {
+  const buttons = Array.from({ length: 8 }, (_, i) => {
+    const n = i + 1;
+    const occ = occupiedHatches[n];
+    if (occ) {
+      return `<button class="hatch-btn hatch-btn--occupied" title="Hatch ${n}: ${escapeHtml(occ)}" disabled>${n}<br>${escapeHtml(occ)}</button>`;
+    }
+    return `<button class="hatch-btn" data-assign-hatch="${n}" data-assign-ref="${escapeHtml(ref)}">${n}</button>`;
+  }).join("");
+  return `
+    <div class="hatch-picker" data-picker-ref="${escapeHtml(ref)}">
+      <div class="hatch-picker-label">Assign hatch:</div>
+      <div class="hatch-grid">${buttons}</div>
+      <button class="hatch-cancel" data-cancel-picker="${escapeHtml(ref)}">Cancel</button>
+    </div>`;
+}
+
+async function markCollect(ref, hatch) {
+  const res = await fetch(`/api/orders/${encodeURIComponent(ref)}/collect`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ hatch })
+  });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || `Failed: ${res.status}`);
@@ -44,6 +68,9 @@ async function clearPrinterAlert(location) {
   });
   await refresh();
 }
+
+// Refs with the hatch picker open — preserved across refreshes
+const openPickers = new Set();
 
 async function refresh() {
   try {
@@ -70,21 +97,78 @@ async function refresh() {
       if (byState[o.state]) byState[o.state].push(o);
     }
 
-    pendingEl.innerHTML = byState.unpaid.map(renderOrder).join("") || "<p>None</p>";
-    payingEl.innerHTML  = byState.processing.map(renderOrder).join("") || "<p>None</p>";
-    collectEl.innerHTML = byState.collect.map(renderOrder).join("") || "<p>None</p>";
+    // Build occupied hatch map: hatch# → order_name
+    const occupiedHatches = {};
+    for (const o of byState.collect) {
+      if (o.hatch) occupiedHatches[o.hatch] = o.order_name;
+    }
+
+    pendingEl.innerHTML = byState.unpaid.map(o => renderOrder(o, occupiedHatches)).join("") || "<p>None</p>";
+    payingEl.innerHTML  = byState.processing.map(o => renderOrder(o, occupiedHatches)).join("") || "<p>None</p>";
+    collectEl.innerHTML = byState.collect.map(o => renderOrder(o, occupiedHatches)).join("") || "<p>None</p>";
+
+    // Re-open any hatch pickers that were open before the refresh
+    for (const ref of openPickers) {
+      const orderEl = document.querySelector(`[data-ref="${CSS.escape(ref)}"]`);
+      if (orderEl && !orderEl.querySelector(".hatch-picker")) {
+        const btn = orderEl.querySelector(".collect-btn");
+        if (btn) btn.replaceWith(createPickerEl(ref, occupiedHatches));
+      }
+    }
   } catch (err) {
     refreshDelay = Math.min(refreshDelay * 2, REFRESH_MAX);
     errorEl.innerHTML = `<div class="error-banner">${escapeHtml(err.message)}</div>`;
   }
 }
 
+function createPickerEl(ref, occupiedHatches) {
+  const div = document.createElement("div");
+  div.innerHTML = renderHatchPicker(ref, occupiedHatches);
+  return div.firstElementChild;
+}
+
 document.addEventListener("click", async e => {
+  // "Ready to collect" — show hatch picker
   const collectBtn = e.target.closest("[data-collect]");
   if (collectBtn) {
-    collectBtn.disabled = true;
-    try { await markCollect(collectBtn.dataset.collect); await refresh(); }
-    catch (err) { alert(err.message); collectBtn.disabled = false; }
+    const ref = collectBtn.dataset.collect;
+    openPickers.add(ref);
+    // Build current occupied map from rendered collect column
+    const occupiedHatches = {};
+    document.querySelectorAll(".order--collect[data-ref]").forEach(el => {
+      const hatchEl = el.querySelector(".order-hatch");
+      if (hatchEl) {
+        const m = hatchEl.textContent.match(/\d+/);
+        if (m) occupiedHatches[Number(m[0])] = el.querySelector(".order-name")?.textContent ?? "";
+      }
+    });
+    collectBtn.replaceWith(createPickerEl(ref, occupiedHatches));
+    return;
+  }
+
+  // Hatch button — assign and move to collect
+  const hatchBtn = e.target.closest("[data-assign-hatch]");
+  if (hatchBtn) {
+    const ref   = hatchBtn.dataset.assignRef;
+    const hatch = Number(hatchBtn.dataset.assignHatch);
+    hatchBtn.disabled = true;
+    try {
+      await markCollect(ref, hatch);
+      openPickers.delete(ref);
+      await refresh();
+    } catch (err) {
+      alert(err.message);
+      hatchBtn.disabled = false;
+    }
+    return;
+  }
+
+  // Cancel hatch picker
+  const cancelBtn = e.target.closest("[data-cancel-picker]");
+  if (cancelBtn) {
+    const ref = cancelBtn.dataset.cancelPicker;
+    openPickers.delete(ref);
+    await refresh();
     return;
   }
 

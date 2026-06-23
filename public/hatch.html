@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Hatch — Space Bar</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Eurostile', ui-sans-serif, system-ui, sans-serif;
+      background: #000F00;
+      color: #7CC142;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .crt-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px, transparent 3px,
+        rgba(0,0,0,0.15) 3px, rgba(0,0,0,0.15) 4px
+      );
+    }
+
+    .hatch-label {
+      font-size: clamp(0.7rem, 4vw, 1rem);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: rgba(124,193,66,0.4);
+      margin-bottom: 0.5em;
+    }
+
+    .hatch-number {
+      font-size: clamp(5rem, 30vw, 12rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      color: #7CC142;
+      text-shadow: 0 0 40px rgba(124,193,66,0.35);
+    }
+
+    .order-section {
+      margin-top: 2rem;
+      text-align: center;
+    }
+
+    .order-name {
+      font-size: clamp(2rem, 12vw, 5rem);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #FCA311;
+      text-shadow: 0 0 24px rgba(252,163,17,0.35);
+      animation: order-arrive 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+    }
+
+    @keyframes order-arrive {
+      from { transform: scale(0.85); opacity: 0; }
+      to   { transform: scale(1);    opacity: 1; }
+    }
+
+    .order-sub {
+      font-size: clamp(0.7rem, 3vw, 1rem);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(252,163,17,0.5);
+      margin-top: 0.4em;
+    }
+
+    .empty {
+      font-size: clamp(0.7rem, 3vw, 1rem);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(124,193,66,0.2);
+    }
+  </style>
+</head>
+<body>
+  <div class="crt-overlay" aria-hidden="true"></div>
+  <div class="hatch-label">Hatch</div>
+  <div class="hatch-number" id="hatch-number">—</div>
+  <div class="order-section" id="order-section">
+    <div class="empty">No order assigned</div>
+  </div>
+  <script src="/hatch.js"></script>
+</body>
+</html>

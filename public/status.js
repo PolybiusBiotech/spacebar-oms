@@ -76,8 +76,10 @@ async function refresh() {
       `<div class="order-name">${escapeHtml(o.order_name)}</div>`).join("") || "";
     paying.innerHTML  = byState.processing.map(o =>
       `<div class="order-name">${escapeHtml(o.order_name)}</div>`).join("") || "";
-    collect.innerHTML = byState.collect.map(o =>
-      `<div class="order-name">${escapeHtml(o.order_name)}</div>`).join("") || "";
+    collect.innerHTML = byState.collect.map(o => {
+      const hatch = o.hatch ? `<div class="order-hatch">HATCH ${escapeHtml(String(o.hatch))}</div>` : "";
+      return `<div class="order-entry"><div class="order-name">${escapeHtml(o.order_name)}</div>${hatch}</div>`;
+    }).join("") || "";
   } catch {
     refreshDelay = Math.min(refreshDelay * 2, REFRESH_MAX);
     // silent — screen keeps showing last good state

@@ -120,10 +120,18 @@
       .col--paying   .order-name { color: #FCA311; }
       .col--collect  .order-name { color: #7CC142; text-shadow: 0 0 20px rgba(124,193,66,0.28); }
 
-      .order-name + .order-name {
+      .order-entry + .order-entry {
         border-top: 1px solid rgba(124,193,66,0.08);
         padding-top: 0.5rem;
         margin-top: 0.25rem;
+      }
+
+      .order-hatch {
+        font-size: clamp(0.7rem, 1.6vw, 1rem);
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        color: rgba(124,193,66,0.55);
+        margin-top: 0.1em;
       }
 
       /* poly claw watermark */
