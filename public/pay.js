@@ -126,3 +126,7 @@ function connect() {
 }
 
 connect();
+
+// Dev only: ?ol=42 triggers order-loaded state for screenshotting
+const _devOl = new URLSearchParams(location.search).get('ol');
+if (_devOl) showOrderLoaded(_devOl, new URLSearchParams(location.search).get('soft') === '1');
