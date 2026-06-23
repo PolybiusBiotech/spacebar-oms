@@ -217,6 +217,27 @@
       display: block;
     }
 
+    @media (orientation: landscape) {
+      #message {
+        font-size: clamp(1.5rem, 9dvh, 4.5rem);
+      }
+      #message.pay-here {
+        font-size: clamp(2rem, 12dvh, 6rem);
+      }
+      #message.order-loaded {
+        font-size: clamp(2rem, 12dvh, 6rem);
+      }
+      .maintenance-title {
+        font-size: clamp(1.5rem, 9dvh, 4rem);
+      }
+      .maintenance-sub {
+        font-size: clamp(0.7rem, 2.5dvh, 1rem);
+      }
+      .maintenance-reopen {
+        font-size: clamp(0.85rem, 3dvh, 1.25rem);
+      }
+    }
+
   </style>
 </head>
 <body>
