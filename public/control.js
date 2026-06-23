@@ -13,14 +13,12 @@ btnMaintenance.addEventListener("click", () => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ active: enabling, reopeningAt: t })
   }).catch(err => console.error("maintenance toggle failed:", err));
-  // Full maintenance subsumes kiosk maintenance — lock it on together
-  if (enabling) {
-    fetch("/kiosk-maintenance", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ active: true, reopeningAt: t })
-    }).catch(() => {});
-  }
+  // Full maintenance locks kiosk maintenance in sync
+  fetch("/kiosk-maintenance", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ active: enabling, reopeningAt: enabling ? t : "" })
+  }).catch(() => {});
 });
 
 btnKioskMaintenance.addEventListener("click", () => {
