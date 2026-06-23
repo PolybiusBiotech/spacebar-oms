@@ -57,12 +57,11 @@ function setMaintenanceUI(active) {
   btnMaintenance.classList.toggle("btn-maintenance--active", active);
   // Full maintenance locks kiosk maintenance on — disable the button while locked
   if (active) {
-    btnKioskMaintenance.classList.add("btn-kiosk-maintenance--active", "btn-kiosk-maintenance--locked");
-    btnKioskMaintenance.textContent = "Kiosk maintenance (locked)";
+    btnKioskMaintenance.classList.add("btn-kiosk-maintenance--active");
+    btnKioskMaintenance.textContent = "Disable kiosk maintenance";
     btnKioskMaintenance.disabled = true;
   } else {
     btnKioskMaintenance.disabled = false;
-    btnKioskMaintenance.classList.remove("btn-kiosk-maintenance--locked");
     setKioskMaintenanceUI(kioskMaintenanceActive);
   }
 }
