@@ -68,20 +68,19 @@
         gap: 1rem;
       }
       .control-side {
-        flex: 0 0 240px;
+        flex: 0 0 clamp(220px, 22vw, 380px);
         min-width: 0;
-        max-width: 240px;
-        order: 2;
-        overflow-y: auto;
-        overflow-x: hidden;
+        order: 1;
+        overflow: hidden;
       }
       .presets {
         flex: 1;
         min-width: 0;
-        order: 1;
-        align-content: start;
+        min-height: 0;
+        order: 2;
         grid-template-columns: repeat(3, 1fr);
-        overflow-y: auto;
+        grid-auto-rows: minmax(0, 1fr);
+        overflow: hidden;
       }
     }
 
@@ -113,6 +112,18 @@
       letter-spacing: 0.04em;
       margin-top: 0.3rem;
       text-transform: none;
+    }
+
+    @media (orientation: landscape) and (min-width: 640px) {
+      .preset {
+        font-size: clamp(0.85rem, 4dvh, 2.8rem);
+        padding: clamp(0.5rem, 3dvh, 3rem) clamp(0.4rem, 1.5vw, 1.5rem);
+        line-height: 1.2;
+      }
+      .preset-plain-hint {
+        font-size: clamp(0.5rem, 1.5dvh, 0.9rem);
+        margin-top: 0.4em;
+      }
     }
 
     .freetext {
