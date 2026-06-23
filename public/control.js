@@ -7,11 +7,20 @@ let kioskMaintenanceActive = false;
 
 btnMaintenance.addEventListener("click", () => {
   const enabling = !maintenanceActive;
+  const t = reopenTimeInput.value || "";
   fetch("/maintenance", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ active: enabling, reopeningAt: reopenTimeInput.value || "" })
+    body: JSON.stringify({ active: enabling, reopeningAt: t })
   }).catch(err => console.error("maintenance toggle failed:", err));
+  // Full maintenance subsumes kiosk maintenance — lock it on together
+  if (enabling) {
+    fetch("/kiosk-maintenance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ active: true, reopeningAt: t })
+    }).catch(() => {});
+  }
 });
 
 btnKioskMaintenance.addEventListener("click", () => {
@@ -46,10 +55,21 @@ function setMaintenanceUI(active) {
   maintenanceActive = active;
   btnMaintenance.textContent = active ? "Disable full maintenance" : "Enable full maintenance";
   btnMaintenance.classList.toggle("btn-maintenance--active", active);
+  // Full maintenance locks kiosk maintenance on — disable the button while locked
+  if (active) {
+    btnKioskMaintenance.classList.add("btn-kiosk-maintenance--active", "btn-kiosk-maintenance--locked");
+    btnKioskMaintenance.textContent = "Kiosk maintenance (locked)";
+    btnKioskMaintenance.disabled = true;
+  } else {
+    btnKioskMaintenance.disabled = false;
+    btnKioskMaintenance.classList.remove("btn-kiosk-maintenance--locked");
+    setKioskMaintenanceUI(kioskMaintenanceActive);
+  }
 }
 
 function setKioskMaintenanceUI(active) {
   kioskMaintenanceActive = active;
+  if (maintenanceActive) return; // locked — don't update visuals
   btnKioskMaintenance.textContent = active ? "Disable kiosk maintenance" : "Enable kiosk maintenance";
   btnKioskMaintenance.classList.toggle("btn-kiosk-maintenance--active", active);
 }
