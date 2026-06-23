@@ -19,8 +19,8 @@ function renderOrder(order, occupiedHatches) {
   let footer = "";
   if (order.state === "processing") {
     footer = `<button class="collect-btn" data-collect="${escapeHtml(order.order_ref)}">Ready to collect ✓</button>`;
-  } else if (order.state === "collect" && order.hatch) {
-    footer = `<div class="order-hatch">Hatch ${escapeHtml(String(order.hatch))}</div>`;
+  } else if (order.state === "collect" && order.collection_point) {
+    footer = `<div class="order-hatch">Collection Point ${escapeHtml(String(order.collection_point))}</div>`;
   }
   return `
     <div class="order order--${escapeHtml(order.state)}" data-ref="${escapeHtml(order.order_ref)}">
@@ -42,17 +42,17 @@ function renderHatchPicker(ref, occupiedHatches) {
   }).join("");
   return `
     <div class="hatch-picker" data-picker-ref="${escapeHtml(ref)}">
-      <div class="hatch-picker-label">Assign hatch:</div>
+      <div class="hatch-picker-label">Assign collection point:</div>
       <div class="hatch-grid">${buttons}</div>
       <button class="hatch-cancel" data-cancel-picker="${escapeHtml(ref)}">Cancel</button>
     </div>`;
 }
 
-async function markCollect(ref, hatch) {
+async function markCollect(ref, collection_point) {
   const res = await fetch(`/api/orders/${encodeURIComponent(ref)}/collect`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ hatch })
+    body: JSON.stringify({ collection_point })
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -100,7 +100,7 @@ async function refresh() {
     // Build occupied hatch map: hatch# → order_name
     const occupiedHatches = {};
     for (const o of byState.collect) {
-      if (o.hatch) occupiedHatches[o.hatch] = o.order_name;
+      if (o.collection_point) occupiedHatches[o.collection_point] = o.order_name;
     }
 
     pendingEl.innerHTML = byState.unpaid.map(o => renderOrder(o, occupiedHatches)).join("") || "<p>None</p>";
@@ -149,11 +149,11 @@ document.addEventListener("click", async e => {
   // Hatch button — assign and move to collect
   const hatchBtn = e.target.closest("[data-assign-hatch]");
   if (hatchBtn) {
-    const ref   = hatchBtn.dataset.assignRef;
-    const hatch = Number(hatchBtn.dataset.assignHatch);
+    const ref              = hatchBtn.dataset.assignRef;
+    const collection_point = Number(hatchBtn.dataset.assignHatch);
     hatchBtn.disabled = true;
     try {
-      await markCollect(ref, hatch);
+      await markCollect(ref, collection_point);
       openPickers.delete(ref);
       await refresh();
     } catch (err) {

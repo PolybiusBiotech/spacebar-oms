@@ -225,10 +225,11 @@ function mockOrders() {
 
 function seedMockCollect() {
   const now = Date.now();
-  for (const ref of ["48", "49"]) {
+  const seeds = [["48", 2], ["49", 5]];
+  for (const [ref, collection_point] of seeds) {
     orderState.set(ref, {
       order_ref: ref, order_name: ref, total: "6.00",
-      state: "collect", collectAt: now, lines: [],
+      state: "collect", collectAt: now, collection_point, lines: [],
       created_at: new Date().toISOString(),
     });
   }
@@ -328,13 +329,13 @@ export function createServer(config) {
           lines: o.lines,
           created_at: o.created_at,
           state: o.state,
-          hatch: o.hatch ?? null
+          collection_point: o.collection_point ?? null
         }));
         sendJson(res, 200, { orders, printer_alerts: printerAlerts, kiosk_maintenance: kioskMaint });
         return;
       }
 
-      // Operator marks an order as ready for collection, assigning a hatch (1-8).
+      // Operator marks an order as ready for collection, assigning a collection point (1-6).
       const collectMatch = url.pathname.match(/^\/api\/orders\/([^/]+)\/collect$/);
       if (collectMatch && req.method === "POST") {
         const ref = collectMatch[1];
@@ -351,19 +352,19 @@ export function createServer(config) {
         for await (const chunk of req) chunks.push(chunk);
         let body = {};
         try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch {}
-        const hatch = Number(body.hatch);
-        if (!Number.isInteger(hatch) || hatch < 1 || hatch > 6) {
-          sendJson(res, 400, { error: "bad-hatch", message: "hatch must be an integer 1–6." });
+        const collection_point = Number(body.collection_point);
+        if (!Number.isInteger(collection_point) || collection_point < 1 || collection_point > 6) {
+          sendJson(res, 400, { error: "bad-collection-point", message: "collection_point must be an integer 1–6." });
           return;
         }
-        const collected = { ...order, state: "collect", collectAt: Date.now(), hatch };
+        const collected = { ...order, state: "collect", collectAt: Date.now(), collection_point };
         orderState.set(ref, collected);
         collectedRefs.add(ref);
         logCollect(config, collected);
         markCollected(config, ref).catch(err =>
           console.error(`[collect] Failed to mark ${ref} collected in tillweb: ${err.message}`)
         );
-        sendJson(res, 200, { order_ref: ref, state: "collect", hatch });
+        sendJson(res, 200, { order_ref: ref, state: "collect", collection_point });
         return;
       }
 
@@ -471,10 +472,10 @@ export function createServer(config) {
       }
 
       // Clean URLs for the OMS screens
-      const hatchRouteMatch = url.pathname.match(/^\/hatch\/([1-6])$/);
-      if (hatchRouteMatch) { req.url = "/hatch.html"; await serveStatic(config, req, res); return; }
+      const collectionRouteMatch = url.pathname.match(/^\/collection\/([1-6])$/);
+      if (collectionRouteMatch) { req.url = "/collection.html"; await serveStatic(config, req, res); return; }
 
-      const rewrites = { "/status": "/status.html", "/customer": "/status.html", "/staff": "/staff.html", "/pay": "/pay.html", "/control": "/control.html", "/pay/control": "/control.html" };
+      const rewrites = { "/status": "/status.html", "/customer": "/status.html", "/staff": "/staff.html", "/pay": "/pay.html", "/control": "/control.html", "/pay/control": "/control.html", "/scan": "/scan.html" };
       if (rewrites[url.pathname]) req.url = rewrites[url.pathname];
 
       if (req.method === "GET" || req.method === "HEAD") {

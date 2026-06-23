@@ -1,0 +1,15 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "spacebar-oms",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["start"],
+      "cwd": "/Users/felix/Documents/code/emf-till/spacebar-oms",
+      "port": 3000,
+      "env": {
+        "OMS_MOCK_MODE": "true"
+      }
+    }
+  ]
+}

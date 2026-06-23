@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Collection Scan — Space Bar</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Eurostile', ui-sans-serif, system-ui, sans-serif;
+      background: radial-gradient(ellipse 80% 70% at 50% 40%, #001a00 0%, #000F00 100%);
+      color: #7CC142;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .crt-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px, transparent 3px,
+        rgba(0,0,0,0.15) 3px, rgba(0,0,0,0.15) 4px
+      );
+    }
+
+    /* Hidden input captures scanner keystrokes */
+    #scan-input {
+      position: fixed;
+      opacity: 0;
+      width: 1px;
+      height: 1px;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+    }
+
+    .screen { text-align: center; }
+
+    /* Idle state */
+    .idle-prompt {
+      font-size: clamp(1rem, 3vw, 1.8rem);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: rgba(124,193,66,0.25);
+    }
+
+    .idle-icon {
+      font-size: clamp(3rem, 12vw, 7rem);
+      color: rgba(124,193,66,0.1);
+      margin-bottom: 1rem;
+      line-height: 1;
+    }
+
+    /* Result state */
+    .result-order {
+      font-size: clamp(2.5rem, 12vw, 6rem);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #FCA311;
+      text-shadow: 0 0 32px rgba(252,163,17,0.4);
+    }
+
+    .result-label {
+      font-size: clamp(0.6rem, 2vw, 0.85rem);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: rgba(124,193,66,0.4);
+      margin: 1.2rem 0 0.4rem;
+    }
+
+    .result-cp {
+      font-size: clamp(4rem, 22vw, 10rem);
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      line-height: 1;
+      color: #7CC142;
+      text-shadow: 0 0 60px rgba(124,193,66,0.5);
+    }
+
+    /* Error state */
+    .error-msg {
+      font-size: clamp(0.9rem, 3vw, 1.5rem);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(252,100,50,0.7);
+    }
+  </style>
+</head>
+<body>
+  <div class="crt-overlay" aria-hidden="true"></div>
+  <input id="scan-input" type="text" autocomplete="off" autocorrect="off" spellcheck="false" aria-hidden="true">
+  <div class="screen" id="screen">
+    <div class="idle-icon">▤</div>
+    <div class="idle-prompt">Scan receipt</div>
+  </div>
+  <script src="/scan.js"></script>
+</body>
+</html>

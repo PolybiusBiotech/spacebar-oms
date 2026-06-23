@@ -1,14 +1,14 @@
-const hatchNumberEl  = document.getElementById("hatch-number");
+const cpNumberEl     = document.getElementById("cp-number");
 const orderSectionEl = document.getElementById("order-section");
 
-// Read hatch number from URL path e.g. /hatch/3
-const hatch = Number(location.pathname.match(/\/hatch\/(\d+)/)?.[1]);
+// Read collection point number from URL path e.g. /collection/3
+const collectionPoint = Number(location.pathname.match(/\/collection\/(\d+)/)?.[1]);
 
-if (!hatch) {
-  hatchNumberEl.textContent = "?";
+if (!collectionPoint) {
+  cpNumberEl.textContent = "?";
 } else {
-  hatchNumberEl.textContent = hatch;
-  document.title = `Hatch ${hatch} — Space Bar`;
+  cpNumberEl.textContent = collectionPoint;
+  document.title = `Collection Point ${collectionPoint} — Space Bar`;
 }
 
 let lastOrderRef = null;
@@ -25,7 +25,7 @@ async function refresh() {
 
     refreshDelay = REFRESH_BASE;
 
-    const order = orders.find(o => o.state === "collect" && o.hatch === hatch) ?? null;
+    const order = orders.find(o => o.state === "collect" && o.collection_point === collectionPoint) ?? null;
     const ref = order?.order_ref ?? null;
 
     if (ref !== lastOrderRef) {

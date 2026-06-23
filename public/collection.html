@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-  <title>Hatch — Space Bar</title>
+  <title>Collection Point — Space Bar</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -31,7 +31,7 @@
       );
     }
 
-    .hatch-label {
+    .cp-label {
       font-size: clamp(0.7rem, 4vw, 1rem);
       letter-spacing: 0.3em;
       text-transform: uppercase;
@@ -39,7 +39,7 @@
       margin-bottom: 0.5em;
     }
 
-    .hatch-number {
+    .cp-number {
       font-size: clamp(5rem, 30vw, 12rem);
       font-weight: 700;
       letter-spacing: -0.02em;
@@ -85,11 +85,11 @@
 </head>
 <body>
   <div class="crt-overlay" aria-hidden="true"></div>
-  <div class="hatch-label">Hatch</div>
-  <div class="hatch-number" id="hatch-number">—</div>
+  <div class="cp-label">Collection Point</div>
+  <div class="cp-number" id="cp-number">—</div>
   <div class="order-section" id="order-section">
     <div class="empty">No order assigned</div>
   </div>
-  <script src="/hatch.js"></script>
+  <script src="/collection.js"></script>
 </body>
 </html>
