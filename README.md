@@ -30,7 +30,7 @@ PAYMENT PROCESSED · PLEASE WAIT · NEXT CUSTOMER
 
 **Idle timeout:** non-default messages auto-clear back to PAY HERE after 30 seconds of inactivity.
 
-**Help button:** the customer taps "Need help?" on the iPhone. This sets PLEASE WAIT with no idle timeout and fires a named SSE `help` event to all control-page clients, triggering a repeating red flash + triple beep until staff acknowledge by pressing any button. ⚠️ Unreliable — see [open-questions.md Q17](../docs/open-questions.md).
+**Help button:** the customer taps "Need help?" on the iPhone. This sets PLEASE WAIT with no idle timeout and fires a named SSE `help` event to all control-page clients, triggering a repeating red flash + triple beep until staff acknowledge by pressing any button. Server tracks `helpPending` state and replays the event on reconnect so the alert is never silently lost.
 
 **Order-loaded alert:** when the barcode scanner at the till reads a QR/slip, the recall plugin fires `POST /pay/order-loaded`. The control page shows a 5-second pop-up with the order ref and an "ID Rejected" shortcut button. Soft-only orders show a green "auto pay" variant.
 
