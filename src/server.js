@@ -352,8 +352,8 @@ export function createServer(config) {
         let body = {};
         try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch {}
         const hatch = Number(body.hatch);
-        if (!Number.isInteger(hatch) || hatch < 1 || hatch > 8) {
-          sendJson(res, 400, { error: "bad-hatch", message: "hatch must be an integer 1–8." });
+        if (!Number.isInteger(hatch) || hatch < 1 || hatch > 6) {
+          sendJson(res, 400, { error: "bad-hatch", message: "hatch must be an integer 1–6." });
           return;
         }
         const collected = { ...order, state: "collect", collectAt: Date.now(), hatch };
@@ -471,7 +471,7 @@ export function createServer(config) {
       }
 
       // Clean URLs for the OMS screens
-      const hatchRouteMatch = url.pathname.match(/^\/hatch\/([1-8])$/);
+      const hatchRouteMatch = url.pathname.match(/^\/hatch\/([1-6])$/);
       if (hatchRouteMatch) { req.url = "/hatch.html"; await serveStatic(config, req, res); return; }
 
       const rewrites = { "/status": "/status.html", "/customer": "/status.html", "/staff": "/staff.html", "/pay": "/pay.html", "/control": "/control.html", "/pay/control": "/control.html" };
