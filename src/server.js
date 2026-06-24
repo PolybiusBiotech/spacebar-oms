@@ -225,11 +225,15 @@ function mockOrders() {
 
 function seedMockCollect() {
   const now = Date.now();
-  const seeds = [["48", 2], ["49", 5]];
-  for (const [ref, collection_point] of seeds) {
+  const seeds = [
+    ["48", 2, [{ quantity: 2, description: "Buzzball Watermelon", line_total: "6.00" }]],
+    ["49", 5, [{ quantity: 1, description: "Pint of Lager", line_total: "5.50" }]],
+    ["50", 3, [{ quantity: 1, description: "Buzzball Strawberry", line_total: "3.00" }, { quantity: 1, description: "Pint of Cider", line_total: "5.50" }]],
+  ];
+  for (const [ref, collection_point, lines] of seeds) {
     orderState.set(ref, {
-      order_ref: ref, order_name: ref, total: "6.00",
-      state: "collect", collectAt: now, collection_point, lines: [],
+      order_ref: ref, order_name: ref, total: lines.reduce((s, l) => s + parseFloat(l.line_total), 0).toFixed(2),
+      state: "collect", collectAt: now, collection_point, lines,
       created_at: new Date().toISOString(),
     });
   }

@@ -22,6 +22,18 @@ scanInput.addEventListener("keydown", e => {
   }
 });
 
+function isBuzzball(description) {
+  return String(description ?? "").toLowerCase().startsWith("buzzball");
+}
+
+function collectionLabel(lines) {
+  const hasTube  = lines.some(l => isBuzzball(l.description));
+  const hasHatch = lines.some(l => !isBuzzball(l.description));
+  if (hasTube && hasHatch) return "Hatch & Tube";
+  if (hasTube) return "Tube";
+  return "Hatch";
+}
+
 async function processScan(raw) {
   clearTimeout(resetTimer);
 
@@ -43,7 +55,7 @@ async function processScan(raw) {
     } else if (!order.collection_point) {
       showError("No collection point assigned");
     } else {
-      showResult(order.order_name, order.collection_point);
+      showResult(order.order_name, order.collection_point, collectionLabel(order.lines ?? []));
     }
   } catch {
     showError("Connection error");
@@ -58,10 +70,11 @@ function showIdle() {
     <div class="idle-prompt">Scan receipt</div>`;
 }
 
-function showResult(orderName, collectionPoint) {
+function showResult(orderName, collectionPoint, label) {
   screen.innerHTML = `
+    <div class="result-order-label">Order</div>
     <div class="result-order">${escapeHtml(orderName)}</div>
-    <div class="result-label">Collection Point</div>
+    <div class="result-label">${escapeHtml(label)}</div>
     <div class="result-cp">${escapeHtml(String(collectionPoint))}</div>`;
 }
 
