@@ -73,7 +73,7 @@
 
       .board {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: 1fr 2fr 2fr;
         gap: 0;
         flex: 1;
         min-height: 0;
@@ -88,12 +88,14 @@
       .col:last-child { border-right: none; }
 
       .col h2 {
-        font-size: clamp(0.55rem, 1.3vw, 0.7rem);
+        font-size: clamp(0.75rem, 1.6vw, 1rem);
         letter-spacing: 0.2em;
         text-transform: uppercase;
         padding: 1rem 1.25rem 0.75rem;
         border-bottom: 1px solid rgba(124,193,66,0.12);
         flex-shrink: 0;
+        vertical-align: top;
+        box-sizing: border-box;
       }
 
       .col--pending  h2 { color: rgba(124,193,66,0.35); }
@@ -102,16 +104,27 @@
 
       .col > div {
         flex: 1;
-        overflow-y: auto;
+        overflow: hidden;
         padding: 0.75rem 1.25rem;
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
       }
 
+      /* Processing column: multi-column layout so overflow wraps sideways */
+      .col--paying > div {
+        display: block;
+        columns: 2;
+        column-gap: 1rem;
+        column-fill: auto;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+      }
+
       .order-name {
         font-size: clamp(2rem, 5vw, 3.5rem);
         font-weight: 700;
+        font-variant-numeric: tabular-nums;
         letter-spacing: 0.04em;
         line-height: 1.1;
       }
@@ -124,6 +137,30 @@
         border-top: 1px solid rgba(124,193,66,0.08);
         padding-top: 0.5rem;
         margin-top: 0.25rem;
+      }
+
+      .order-entry--scanned {
+        display: flex;
+        align-items: baseline;
+        gap: 0.5rem;
+        flex-wrap: nowrap;
+      }
+      .order-collect-label {
+        font-size: clamp(1rem, 2vw, 1.6rem);
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        color: rgba(124,193,66,0.5);
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      .order-collect-point {
+        font-size: clamp(2rem, 4.5vw, 3.5rem);
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.04em;
+        line-height: 1;
+        color: rgba(124,193,66,0.9);
+        text-shadow: 0 0 12px rgba(124,193,66,0.25);
       }
 
       /* poly claw watermark */
@@ -240,6 +277,16 @@
     </div>
     <img class="board-claw" src="/poly-claw.png" alt="">
     <script src="/status.js"></script>
+    <script>
+      function alignColHeaders() {
+        const headings = document.querySelectorAll('.col h2');
+        headings.forEach(h => h.style.height = '');
+        const maxH = Math.max(...Array.from(headings).map(h => h.offsetHeight));
+        headings.forEach(h => h.style.height = maxH + 'px');
+      }
+      alignColHeaders();
+      new ResizeObserver(alignColHeaders).observe(document.querySelector('.board'));
+    </script>
     <script>
       (function () {
         const board = document.getElementById('board');

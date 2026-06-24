@@ -51,9 +51,22 @@ function escapeHtml(v) {
   return String(v ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 
+function isBuzzball(description) {
+  return String(description ?? "").toLowerCase().startsWith("buzzball");
+}
+
+function collectionLabel(lines) {
+  const hasTube  = lines.some(l => isBuzzball(l.description));
+  const hasHatch = lines.some(l => !isBuzzball(l.description));
+  if (hasTube && hasHatch) return "Hatch & Tube";
+  if (hasTube) return "Tube";
+  return "Hatch";
+}
+
 const pending = document.getElementById("pending");
 const paying  = document.getElementById("paying");
 const collect = document.getElementById("collect");
+
 
 let refreshDelay = 3000;
 const REFRESH_BASE = 3000;
@@ -76,9 +89,16 @@ async function refresh() {
       `<div class="order-name">${escapeHtml(o.order_name)}</div>`).join("") || "";
     paying.innerHTML  = byState.processing.map(o =>
       `<div class="order-name">${escapeHtml(o.order_name)}</div>`).join("") || "";
-    collect.innerHTML = byState.collect.map(o =>
-      `<div class="order-entry"><div class="order-name">${escapeHtml(o.order_name)}</div></div>`
-    ).join("") || "";
+    collect.innerHTML = byState.collect.map(o => {
+      if (o.scanned && o.collection_point) {
+        return `<div class="order-entry order-entry--scanned">
+          <div class="order-name">${escapeHtml(o.order_name)}</div>
+          <span class="order-collect-label">${escapeHtml(collectionLabel(o.lines ?? []))}</span>
+          <span class="order-collect-point">${escapeHtml(String(o.collection_point))}</span>
+        </div>`;
+      }
+      return `<div class="order-entry"><div class="order-name">${escapeHtml(o.order_name)}</div></div>`;
+    }).join("") || "";
   } catch {
     refreshDelay = Math.min(refreshDelay * 2, REFRESH_MAX);
     // silent — screen keeps showing last good state

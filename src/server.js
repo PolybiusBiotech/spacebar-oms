@@ -213,27 +213,32 @@ async function pollLoop(config) {
 }
 
 function mockOrders() {
-  return [
-    { order_ref: "42",  order_name: "42",  total: "3.50",  paid: false, lines: [], created_at: new Date().toISOString() },
-    { order_ref: "43",  order_name: "43",  total: "7.20",  paid: false, lines: [], created_at: new Date().toISOString() },
-    { order_ref: "44",  order_name: "44",  total: "12.00", paid: false, lines: [], created_at: new Date().toISOString() },
-    { order_ref: "45",  order_name: "45",  total: "5.60",  paid: true,  lines: [], created_at: new Date().toISOString() },
-    { order_ref: "46",  order_name: "46",  total: "8.40",  paid: true,  lines: [], created_at: new Date().toISOString() },
-    { order_ref: "47",  order_name: "47",  total: "4.20",  paid: true,  lines: [], created_at: new Date().toISOString() },
+  const orders = [
+    { order_ref: "10042", order_name: "10042", total: "3.50",  paid: false, lines: [], created_at: new Date().toISOString() },
+    { order_ref: "10043", order_name: "10043", total: "7.20",  paid: false, lines: [], created_at: new Date().toISOString() },
+    { order_ref: "10044", order_name: "10044", total: "12.00", paid: false, lines: [], created_at: new Date().toISOString() },
   ];
+  for (let i = 45; i < 95; i++) {
+    const ref = String(10000 + i);
+    orders.push({ order_ref: ref, order_name: ref, total: "5.00", paid: true, lines: [], created_at: new Date().toISOString() });
+  }
+  return orders;
 }
 
 function seedMockCollect() {
   const now = Date.now();
   const seeds = [
-    ["48", 2, [{ quantity: 2, description: "Buzzball Watermelon", line_total: "6.00" }]],
-    ["49", 5, [{ quantity: 1, description: "Pint of Lager", line_total: "5.50" }]],
-    ["50", 3, [{ quantity: 1, description: "Buzzball Strawberry", line_total: "3.00" }, { quantity: 1, description: "Pint of Cider", line_total: "5.50" }]],
+    // hatch only
+    ["10048", 2, [{ quantity: 1, description: "Pint of Lager", line_total: "5.50" }, { quantity: 1, description: "Glass of Wine", line_total: "6.00" }]],
+    // tube only
+    ["10049", 5, [{ quantity: 2, description: "Buzzball Watermelon", line_total: "6.00" }, { quantity: 1, description: "Buzzball Strawberry Daiquiri", line_total: "3.00" }]],
+    // hatch & tube
+    ["10050", 3, [{ quantity: 1, description: "Buzzball Strawberry", line_total: "3.00" }, { quantity: 1, description: "Pint of Cider", line_total: "5.50" }]],
   ];
   for (const [ref, collection_point, lines] of seeds) {
     orderState.set(ref, {
       order_ref: ref, order_name: ref, total: lines.reduce((s, l) => s + parseFloat(l.line_total), 0).toFixed(2),
-      state: "collect", collectAt: now, collection_point, lines,
+      state: "collect", collectAt: now, collection_point, lines, scanned: true,
       created_at: new Date().toISOString(),
     });
   }
@@ -333,7 +338,8 @@ export function createServer(config) {
           lines: o.lines,
           created_at: o.created_at,
           state: o.state,
-          collection_point: o.collection_point ?? null
+          collection_point: o.collection_point ?? null,
+          scanned: o.scanned ?? false
         }));
         sendJson(res, 200, { orders, printer_alerts: printerAlerts, kiosk_maintenance: kioskMaint });
         return;
@@ -472,6 +478,20 @@ export function createServer(config) {
         broadcastKioskOnlyMaintenance();
         console.log(`[kiosk-maintenance] mode ${kioskMaintenanceMode ? "ON" : "OFF"}${kioskMaintenanceReopeningAt ? ` reopening ${kioskMaintenanceReopeningAt}` : ""}`);
         sendJson(res, 200, { ok: true, active: kioskMaintenanceMode, reopeningAt: kioskMaintenanceReopeningAt });
+        return;
+      }
+
+      // Customer scanned their receipt at the collection scanner.
+      const scanMatch = url.pathname.match(/^\/api\/orders\/([^/]+)\/scan$/);
+      if (scanMatch && req.method === "POST") {
+        const ref = decodeURIComponent(scanMatch[1]);
+        const order = orderState.get(ref);
+        if (!order || order.state !== "collect") {
+          sendJson(res, 404, { error: "not-found" });
+          return;
+        }
+        orderState.set(ref, { ...order, scanned: true });
+        sendJson(res, 200, { ok: true });
         return;
       }
 

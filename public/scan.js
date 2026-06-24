@@ -56,6 +56,7 @@ async function processScan(raw) {
       showError("No collection point assigned");
     } else {
       showResult(order.order_name, order.collection_point, collectionLabel(order.lines ?? []));
+      fetch(`/api/orders/${encodeURIComponent(orderRef)}/scan`, { method: "POST" }).catch(() => {});
     }
   } catch {
     showError("Connection error");
