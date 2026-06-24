@@ -10,9 +10,12 @@ const collectEl = document.getElementById("collect");
 
 function renderLines(lines) {
   if (!lines?.length) return "";
-  return `<ul class="order-lines">${lines.map(l =>
-    `<li>${escapeHtml(l.quantity)} × ${escapeHtml(l.description)} — £${escapeHtml(l.line_total)}</li>`
-  ).join("")}</ul>`;
+  return `<div class="order-lines">${lines.map(l =>
+    `<div class="order-line">
+      <span class="order-line-qty">${escapeHtml(String(l.quantity))}×</span>
+      <span class="order-line-desc">${escapeHtml(l.description)}</span>
+    </div>`
+  ).join("")}</div>`;
 }
 
 function renderOrder(order, occupiedHatches) {
@@ -36,7 +39,7 @@ function renderHatchPicker(ref, occupiedHatches) {
     const n = i + 1;
     const occ = occupiedHatches[n];
     if (occ) {
-      return `<button class="hatch-btn hatch-btn--occupied" title="Hatch ${n}: ${escapeHtml(occ)}" disabled>${n}<br>${escapeHtml(occ)}</button>`;
+      return `<button class="hatch-btn hatch-btn--occupied" data-assign-hatch="${n}" data-assign-ref="${escapeHtml(ref)}" title="Will displace ${escapeHtml(occ)}">${n}<br><span style="font-size:0.7em">${escapeHtml(occ)}</span></button>`;
     }
     return `<button class="hatch-btn" data-assign-hatch="${n}" data-assign-ref="${escapeHtml(ref)}">${n}</button>`;
   }).join("");

@@ -212,15 +212,47 @@ async function pollLoop(config) {
   }
 }
 
+const MOCK_STOCK = [
+  { description: "Buzzballz Berry Cherry Limeade",        unit_price: 6.50 },
+  { description: "Buzzballz Chilli Mango",                unit_price: 6.50 },
+  { description: "Buzzballz Choc Tease",                  unit_price: 6.50 },
+  { description: "Buzzballz Espresso Martini",            unit_price: 6.50 },
+  { description: "Buzzballz Lotta Colada",                unit_price: 6.50 },
+  { description: "Buzzballz Passionfruit Martini",        unit_price: 6.50 },
+  { description: "Buzzballz Strawberry 'Rita",            unit_price: 6.50 },
+  { description: "Buzzballz Tequila 'Rita",               unit_price: 6.50 },
+  { description: "Captain Morgan Gold and Pepsi Max (250ml)", unit_price: 5.00 },
+  { description: "Jack Daniels and Coca Cola (330ml)",    unit_price: 5.00 },
+  { description: "Smirnoff and Cola (250ml)",             unit_price: 5.00 },
+  { description: "Tanqueray and Tonic (250ml)",           unit_price: 5.00 },
+  { description: "Nice Fizz 200ml",                       unit_price: 5.00 },
+  { description: "Nice Pale Rosé 187ml",                  unit_price: 5.00 },
+  { description: "Nice Sauvignon Blanc 187ml",            unit_price: 5.00 },
+  { description: "Sea Change Sparkling 0%",               unit_price: 5.00 },
+];
+
+function randomMockLines() {
+  const count = Math.floor(Math.random() * 3) + 1;
+  const lines = [];
+  for (let i = 0; i < count; i++) {
+    const item = MOCK_STOCK[Math.floor(Math.random() * MOCK_STOCK.length)];
+    const quantity = Math.random() < 0.25 ? 2 : 1;
+    lines.push({ quantity, description: item.description, line_total: (item.unit_price * quantity).toFixed(2) });
+  }
+  return lines;
+}
+
 function mockOrders() {
-  const orders = [
-    { order_ref: "10042", order_name: "10042", total: "3.50",  paid: false, lines: [], created_at: new Date().toISOString() },
-    { order_ref: "10043", order_name: "10043", total: "7.20",  paid: false, lines: [], created_at: new Date().toISOString() },
-    { order_ref: "10044", order_name: "10044", total: "12.00", paid: false, lines: [], created_at: new Date().toISOString() },
-  ];
+  const orders = [];
+  for (let i = 42; i <= 44; i++) {
+    const ref = String(10000 + i);
+    const lines = randomMockLines();
+    orders.push({ order_ref: ref, order_name: ref, paid: false, lines, total: lines.reduce((s, l) => s + parseFloat(l.line_total), 0).toFixed(2), created_at: new Date().toISOString() });
+  }
   for (let i = 45; i < 95; i++) {
     const ref = String(10000 + i);
-    orders.push({ order_ref: ref, order_name: ref, total: "5.00", paid: true, lines: [], created_at: new Date().toISOString() });
+    const lines = randomMockLines();
+    orders.push({ order_ref: ref, order_name: ref, paid: true, lines, total: lines.reduce((s, l) => s + parseFloat(l.line_total), 0).toFixed(2), created_at: new Date().toISOString() });
   }
   return orders;
 }
@@ -229,11 +261,21 @@ function seedMockCollect() {
   const now = Date.now();
   const seeds = [
     // hatch only
-    ["10048", 2, [{ quantity: 1, description: "Pint of Lager", line_total: "5.50" }, { quantity: 1, description: "Glass of Wine", line_total: "6.00" }]],
+    ["10048", 2, [
+      { quantity: 2, description: "Jack Daniels and Coca Cola (330ml)", line_total: "10.00" },
+      { quantity: 1, description: "Nice Pale Rosé 187ml",               line_total: "5.00"  },
+    ]],
     // tube only
-    ["10049", 5, [{ quantity: 2, description: "Buzzball Watermelon", line_total: "6.00" }, { quantity: 1, description: "Buzzball Strawberry Daiquiri", line_total: "3.00" }]],
+    ["10049", 5, [
+      { quantity: 1, description: "Buzzballz Chilli Mango",             line_total: "6.50"  },
+      { quantity: 1, description: "Buzzballz Lotta Colada",             line_total: "6.50"  },
+    ]],
     // hatch & tube
-    ["10050", 3, [{ quantity: 1, description: "Buzzball Strawberry", line_total: "3.00" }, { quantity: 1, description: "Pint of Cider", line_total: "5.50" }]],
+    ["10050", 3, [
+      { quantity: 1, description: "Buzzballz Espresso Martini",         line_total: "6.50"  },
+      { quantity: 1, description: "Tanqueray and Tonic (250ml)",        line_total: "5.00"  },
+      { quantity: 1, description: "Nice Sauvignon Blanc 187ml",         line_total: "5.00"  },
+    ]],
   ];
   for (const [ref, collection_point, lines] of seeds) {
     orderState.set(ref, {
@@ -367,6 +409,13 @@ export function createServer(config) {
           sendJson(res, 400, { error: "bad-collection-point", message: "collection_point must be an integer 1–6." });
           return;
         }
+        // Displace any existing order at this collection point
+        for (const [existingRef, existingOrder] of orderState) {
+          if (existingOrder.state === "collect" && existingOrder.collection_point === collection_point) {
+            orderState.delete(existingRef);
+            collectedRefs.add(existingRef);
+          }
+        }
         const collected = { ...order, state: "collect", collectAt: Date.now(), collection_point };
         orderState.set(ref, collected);
         collectedRefs.add(ref);
@@ -492,6 +541,17 @@ export function createServer(config) {
         }
         orderState.set(ref, { ...order, scanned: true });
         sendJson(res, 200, { ok: true });
+        return;
+      }
+
+      // Dev-only: expire all collect orders (mock mode)
+      if (url.pathname === "/api/dev/expire-collect" && req.method === "POST") {
+        if (!config.mockMode) { sendJson(res, 403, { error: "not-mock-mode" }); return; }
+        let count = 0;
+        for (const [ref, order] of orderState) {
+          if (order.state === "collect") { orderState.delete(ref); collectedRefs.add(ref); count++; }
+        }
+        sendJson(res, 200, { ok: true, expired: count });
         return;
       }
 

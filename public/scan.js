@@ -7,6 +7,21 @@ function escapeHtml(v) {
   return String(v ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 
+// Dev helpers (mock mode only)
+window.clearCollect = () => fetch('/api/dev/expire-collect', { method: 'POST' }).then(r => r.json()).then(console.log);
+// scan(ref) or scan() to pick a random collect order
+window.scan = async (ref) => {
+  if (!ref) {
+    const { orders } = await fetch('/api/orders').then(r => r.json());
+    const ready = orders.filter(o => o.state === 'collect' && o.collection_point);
+    if (!ready.length) { console.log('[scan] no orders in collect state'); return; }
+    ref = ready[Math.floor(Math.random() * ready.length)].order_ref;
+    console.log('[scan] picked', ref);
+  }
+  scanInput.value = `KIOSK:${ref}`;
+  scanInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+};
+
 // Keep the hidden input focused so it captures scanner keystrokes
 function refocus() { scanInput.focus(); }
 document.addEventListener("click", refocus);
