@@ -23,7 +23,10 @@ function renderOrder(order, occupiedHatches) {
   if (order.state === "processing") {
     footer = `<button class="collect-btn" data-collect="${escapeHtml(order.order_ref)}">Ready to collect ✓</button>`;
   } else if (order.state === "collect" && order.collection_point) {
-    footer = `<div class="order-hatch">Collection Point ${escapeHtml(String(order.collection_point))}</div>`;
+    const scanStatus = order.scanned
+      ? `<span class="scan-status scan-status--scanned">Scanned — en route</span>`
+      : `<span class="scan-status scan-status--waiting">Awaiting scan</span>`;
+    footer = `<div class="order-hatch">Collection Point ${escapeHtml(String(order.collection_point))}${scanStatus}</div>`;
   }
   return `
     <div class="order order--${escapeHtml(order.state)}" data-ref="${escapeHtml(order.order_ref)}">

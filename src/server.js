@@ -213,14 +213,14 @@ async function pollLoop(config) {
 }
 
 const MOCK_STOCK = [
-  { description: "Buzzballz Berry Cherry Limeade",        unit_price: 6.50 },
-  { description: "Buzzballz Chilli Mango",                unit_price: 6.50 },
-  { description: "Buzzballz Choc Tease",                  unit_price: 6.50 },
-  { description: "Buzzballz Espresso Martini",            unit_price: 6.50 },
-  { description: "Buzzballz Lotta Colada",                unit_price: 6.50 },
-  { description: "Buzzballz Passionfruit Martini",        unit_price: 6.50 },
-  { description: "Buzzballz Strawberry 'Rita",            unit_price: 6.50 },
-  { description: "Buzzballz Tequila 'Rita",               unit_price: 6.50 },
+  { description: "BuzzBallz Berry Cherry Limeade",        unit_price: 6.50 },
+  { description: "BuzzBallz Chilli Mango",                unit_price: 6.50 },
+  { description: "BuzzBallz Choc Tease",                  unit_price: 6.50 },
+  { description: "BuzzBallz Espresso Martini",            unit_price: 6.50 },
+  { description: "BuzzBallz Lotta Colada",                unit_price: 6.50 },
+  { description: "BuzzBallz Passionfruit Martini",        unit_price: 6.50 },
+  { description: "BuzzBallz Strawberry 'Rita",            unit_price: 6.50 },
+  { description: "BuzzBallz Tequila 'Rita",               unit_price: 6.50 },
   { description: "Captain Morgan Gold and Pepsi Max (250ml)", unit_price: 5.00 },
   { description: "Jack Daniels and Coca Cola (330ml)",    unit_price: 5.00 },
   { description: "Smirnoff and Cola (250ml)",             unit_price: 5.00 },
@@ -267,12 +267,12 @@ function seedMockCollect() {
     ]],
     // tube only
     ["10049", 5, [
-      { quantity: 1, description: "Buzzballz Chilli Mango",             line_total: "6.50"  },
-      { quantity: 1, description: "Buzzballz Lotta Colada",             line_total: "6.50"  },
+      { quantity: 1, description: "BuzzBallz Chilli Mango",             line_total: "6.50"  },
+      { quantity: 1, description: "BuzzBallz Lotta Colada",             line_total: "6.50"  },
     ]],
     // hatch & tube
     ["10050", 3, [
-      { quantity: 1, description: "Buzzballz Espresso Martini",         line_total: "6.50"  },
+      { quantity: 1, description: "BuzzBallz Espresso Martini",         line_total: "6.50"  },
       { quantity: 1, description: "Tanqueray and Tonic (250ml)",        line_total: "5.00"  },
       { quantity: 1, description: "Nice Sauvignon Blanc 187ml",         line_total: "5.00"  },
     ]],
