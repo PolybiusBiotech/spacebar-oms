@@ -101,6 +101,24 @@
       text-transform: uppercase;
       color: rgba(252,100,50,0.7);
     }
+
+    /* Payment required state */
+    .payment-required {
+      font-size: clamp(1.4rem, 5vw, 2.5rem);
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #F9E200;
+      text-shadow: 0 0 30px rgba(249,226,0,0.5);
+      margin: 1.2rem 0 0.5rem;
+    }
+
+    .payment-required-sub {
+      font-size: clamp(0.7rem, 2.2vw, 1rem);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(247,127,2,0.7);
+    }
   </style>
 </head>
 <body>
@@ -108,7 +126,7 @@
   <input id="scan-input" type="text" autocomplete="off" autocorrect="off" spellcheck="false" aria-hidden="true">
   <div class="screen" id="screen">
     <div class="idle-icon">▤</div>
-    <div class="idle-prompt">Scan receipt</div>
+    <div class="idle-prompt">Scan your receipt</div>
   </div>
   <script src="/scan.js"></script>
 </body>

@@ -64,11 +64,13 @@ async function processScan(raw) {
     const order = orders.find(o => o.order_ref === orderRef);
 
     if (!order) {
-      showError("Receipt not found");
+      showError("Receipt not recognised");
+    } else if (order.state === "unpaid") {
+      showPaymentRequired(order.order_name);
     } else if (order.state !== "collect") {
-      showError("Order not ready yet");
+      showError("Asset retrieval in progress");
     } else if (!order.collection_point) {
-      showError("No collection point assigned");
+      showError("Collection point not assigned");
     } else {
       showResult(order.order_name, order.collection_point, collectionLabel(order.lines ?? []));
       fetch(`/api/orders/${encodeURIComponent(orderRef)}/scan`, { method: "POST" }).catch(() => {});
@@ -83,15 +85,24 @@ async function processScan(raw) {
 function showIdle() {
   screen.innerHTML = `
     <div class="idle-icon">▤</div>
-    <div class="idle-prompt">Scan receipt</div>`;
+    <div class="idle-prompt">Scan your receipt</div>`;
 }
 
 function showResult(orderName, collectionPoint, label) {
   screen.innerHTML = `
-    <div class="result-order-label">Order</div>
+    <div class="result-order-label">Asset Reference</div>
     <div class="result-order">${escapeHtml(orderName)}</div>
-    <div class="result-label">${escapeHtml(label)}</div>
-    <div class="result-cp">${escapeHtml(String(collectionPoint))}</div>`;
+    <div class="result-label">Collection Point</div>
+    <div class="result-cp">${escapeHtml(String(collectionPoint))}</div>
+    <div class="result-order-label" style="margin-top:0.6em">via ${escapeHtml(label)}</div>`;
+}
+
+function showPaymentRequired(orderName) {
+  screen.innerHTML = `
+    <div class="result-order-label">Asset Reference</div>
+    <div class="result-order">${escapeHtml(orderName)}</div>
+    <div class="payment-required">Payment Required</div>
+    <div class="payment-required-sub">Please proceed to the payment terminal</div>`;
 }
 
 function showError(msg) {
