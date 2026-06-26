@@ -260,17 +260,14 @@ function mockOrders() {
 function seedMockCollect() {
   const now = Date.now();
   const seeds = [
-    // hatch only
-    ["10048", 2, [
+    ["10048", 1, [
       { quantity: 2, description: "Jack Daniels and Coca Cola (330ml)", line_total: "10.00" },
       { quantity: 1, description: "Nice Pale Rosé 187ml",               line_total: "5.00"  },
     ]],
-    // tube only
-    ["10049", 5, [
+    ["10049", 2, [
       { quantity: 1, description: "BuzzBallz Chilli Mango",             line_total: "6.50"  },
       { quantity: 1, description: "BuzzBallz Lotta Colada",             line_total: "6.50"  },
     ]],
-    // hatch & tube
     ["10050", 3, [
       { quantity: 1, description: "BuzzBallz Espresso Martini",         line_total: "6.50"  },
       { quantity: 1, description: "Tanqueray and Tonic (250ml)",        line_total: "5.00"  },
@@ -280,7 +277,7 @@ function seedMockCollect() {
   for (const [ref, collection_point, lines] of seeds) {
     orderState.set(ref, {
       order_ref: ref, order_name: ref, total: lines.reduce((s, l) => s + parseFloat(l.line_total), 0).toFixed(2),
-      state: "collect", collectAt: now, collection_point, lines, scanned: true,
+      state: "collect", collectAt: now, collection_point, lines, scanned: false,
       created_at: new Date().toISOString(),
     });
   }

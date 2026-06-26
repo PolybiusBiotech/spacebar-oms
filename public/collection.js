@@ -59,7 +59,7 @@ async function refresh() {
     const orders = data.orders ?? [];
     refreshDelay = REFRESH_BASE;
 
-    const order = orders.find(o => o.state === "collect" && o.collection_point === collectionPoint) ?? null;
+    const order = orders.find(o => o.state === "collect" && o.collection_point === collectionPoint && o.scanned) ?? null;
     const ref   = order?.order_ref ?? null;
 
     if (ref !== currentOrderRef) {
