@@ -38,7 +38,7 @@ function renderOrder(order, occupiedHatches) {
 }
 
 function renderHatchPicker(ref, occupiedHatches) {
-  const buttons = Array.from({ length: 6 }, (_, i) => {
+  const buttons = Array.from({ length: 3 }, (_, i) => {
     const n = i + 1;
     const occ = occupiedHatches[n];
     if (occ) {

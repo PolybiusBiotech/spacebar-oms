@@ -387,7 +387,7 @@ export function createServer(config) {
         return;
       }
 
-      // Operator marks an order as ready for collection, assigning a collection point (1-6).
+      // Operator marks an order as ready for collection, assigning a collection point (1-3).
       const collectMatch = url.pathname.match(/^\/api\/orders\/([^/]+)\/collect$/);
       if (collectMatch && req.method === "POST") {
         const ref = collectMatch[1];
@@ -405,8 +405,8 @@ export function createServer(config) {
         let body = {};
         try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch {}
         const collection_point = Number(body.collection_point);
-        if (!Number.isInteger(collection_point) || collection_point < 1 || collection_point > 6) {
-          sendJson(res, 400, { error: "bad-collection-point", message: "collection_point must be an integer 1–6." });
+        if (!Number.isInteger(collection_point) || collection_point < 1 || collection_point > 3) {
+          sendJson(res, 400, { error: "bad-collection-point", message: "collection_point must be an integer 1–3." });
           return;
         }
         // Displace any existing order at this collection point
@@ -556,7 +556,7 @@ export function createServer(config) {
       }
 
       // Clean URLs for the OMS screens
-      const collectionRouteMatch = url.pathname.match(/^\/collection\/([1-6])$/);
+      const collectionRouteMatch = url.pathname.match(/^\/collection\/([1-3])$/);
       if (collectionRouteMatch) { req.url = "/collection.html"; await serveStatic(config, req, res); return; }
 
       const rewrites = { "/status": "/status.html", "/customer": "/status.html", "/staff": "/staff.html", "/pay": "/pay.html", "/control": "/control.html", "/pay/control": "/control.html", "/scan": "/scan.html" };

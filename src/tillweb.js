@@ -39,19 +39,21 @@ async function tillwebFetch(config, path, options = {}) {
 
 export async function fetchOrders(config) {
   const params = new URLSearchParams({ location: config.location });
-  const data = await tillwebFetch(config, `/api/kiosk/orders.json?${params}`);
+  const data = await tillwebFetch(config, `/api/kiosk/orders?${params}`);
   return data.orders ?? [];
 }
 
 export async function markRejected(config, orderRef) {
-  await tillwebFetch(config, `/api/kiosk/orders/${encodeURIComponent(orderRef)}/id-reject`, {
+  const params = new URLSearchParams({ location: config.location });
+  await tillwebFetch(config, `/api/kiosk/orders/${encodeURIComponent(orderRef)}/id-reject?${params}`, {
     method: "POST",
     body: JSON.stringify({}),
   });
 }
 
 export async function markCollected(config, orderRef) {
-  await tillwebFetch(config, `/api/kiosk/orders/${encodeURIComponent(orderRef)}/collect`, {
+  const params = new URLSearchParams({ location: config.location });
+  await tillwebFetch(config, `/api/kiosk/orders/${encodeURIComponent(orderRef)}/collect?${params}`, {
     method: "POST",
     body: JSON.stringify({}),
   });
