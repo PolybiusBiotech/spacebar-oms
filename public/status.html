@@ -16,8 +16,8 @@
       body {
         font-family: 'Eurostile', ui-sans-serif, system-ui, sans-serif;
         /* phosphor glow — slight bright centre like a real CRT tube */
-        background: radial-gradient(ellipse 80% 70% at 50% 40%, #001a00 0%, #000F00 100%);
-        color: #7CC142;
+        background: radial-gradient(ellipse 80% 70% at 50% 40%, #110025 0%, #08000f 100%);
+        color: #BE00FE;
         height: 100dvh;
         display: flex;
         flex-direction: column;
@@ -43,7 +43,7 @@
 
       header {
         padding: 0.6rem 1.5rem 0.5rem;
-        border-bottom: 1px solid rgba(124,193,66,0.15);
+        border-bottom: 1px solid rgba(190,0,254,0.15);
         flex-shrink: 0;
         display: flex;
         align-items: center;
@@ -56,7 +56,7 @@
         font-size: clamp(0.45rem, 1.1vw, 0.6rem);
         letter-spacing: 0.22em;
         text-transform: uppercase;
-        color: rgba(124,193,66,0.38);
+        color: rgba(190,0,254,0.38);
         vertical-align: middle;
       }
 
@@ -65,10 +65,10 @@
         font-weight: 400;
         font-size: clamp(0.8rem, 2vw, 1.1rem);
         text-transform: none;
-        color: #FCA311;
+        color: #F77F02;
         display: inline-block;
         transform: rotate(-3deg) translateY(-1px);
-        filter: url(#spray-paint) drop-shadow(0 0 10px rgba(252,163,17,0.65)) drop-shadow(0 0 24px rgba(252,163,17,0.25));
+        filter: url(#spray-paint) drop-shadow(0 0 10px rgba(247,127,2,0.65)) drop-shadow(0 0 24px rgba(247,127,2,0.25));
       }
 
       .board {
@@ -82,7 +82,7 @@
       .col {
         display: flex;
         flex-direction: column;
-        border-right: 1px solid rgba(124,193,66,0.1);
+        border-right: 1px solid rgba(190,0,254,0.1);
         overflow: hidden;
       }
       .col:last-child { border-right: none; }
@@ -92,15 +92,15 @@
         letter-spacing: 0.2em;
         text-transform: uppercase;
         padding: 1rem 1.25rem 0.75rem;
-        border-bottom: 1px solid rgba(124,193,66,0.12);
+        border-bottom: 1px solid rgba(190,0,254,0.12);
         flex-shrink: 0;
         vertical-align: top;
         box-sizing: border-box;
       }
 
-      .col--pending  h2 { color: rgba(124,193,66,0.35); }
-      .col--paying   h2 { color: rgba(252,163,17,0.6); }
-      .col--collect  h2 { color: rgba(124,193,66,0.85); }
+      .col--pending  h2 { color: rgba(190,0,254,0.35); }
+      .col--paying   h2 { color: rgba(247,127,2,0.6); }
+      .col--collect  h2 { color: rgba(190,0,254,0.85); }
 
       .col > div {
         flex: 1;
@@ -129,12 +129,12 @@
         line-height: 1.1;
       }
 
-      .col--pending  .order-name { color: rgba(124,193,66,0.28); }
-      .col--paying   .order-name { color: #FCA311; }
-      .col--collect  .order-name { color: #7CC142; text-shadow: 0 0 20px rgba(124,193,66,0.28); }
+      .col--pending  .order-name { color: rgba(190,0,254,0.28); }
+      .col--paying   .order-name { color: #F77F02; }
+      .col--collect  .order-name { color: #BE00FE; text-shadow: 0 0 20px rgba(190,0,254,0.28); }
 
       .order-entry + .order-entry {
-        border-top: 1px solid rgba(124,193,66,0.08);
+        border-top: 1px solid rgba(190,0,254,0.08);
         padding-top: 0.5rem;
         margin-top: 0.25rem;
       }
@@ -149,7 +149,7 @@
         font-size: clamp(1rem, 2vw, 1.6rem);
         font-weight: 700;
         letter-spacing: 0.12em;
-        color: rgba(124,193,66,0.5);
+        color: rgba(190,0,254,0.5);
         text-transform: uppercase;
         white-space: nowrap;
       }
@@ -159,8 +159,8 @@
         font-variant-numeric: tabular-nums;
         letter-spacing: 0.04em;
         line-height: 1;
-        color: rgba(124,193,66,0.9);
-        text-shadow: 0 0 12px rgba(124,193,66,0.25);
+        color: rgba(190,0,254,0.9);
+        text-shadow: 0 0 12px rgba(190,0,254,0.25);
       }
 
       /* poly claw watermark */
@@ -208,7 +208,7 @@
         position: fixed;
         inset: 0;
         z-index: 9998;
-        background: #000F00;
+        background: #08000f;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -221,20 +221,20 @@
         font-weight: 700;
         letter-spacing: 0.25em;
         text-transform: uppercase;
-        color: #7CC142;
+        color: #BE00FE;
         text-align: center;
       }
       .maintenance-sub {
         font-size: clamp(0.65rem, 1.8vw, 0.9rem);
         letter-spacing: 0.22em;
         text-transform: uppercase;
-        color: rgba(124,193,66,0.45);
+        color: rgba(190,0,254,0.45);
       }
       .maintenance-reopen {
         font-size: clamp(0.8rem, 2.2vw, 1.1rem);
         letter-spacing: 0.18em;
         text-transform: uppercase;
-        color: rgba(124,193,66,0.7);
+        color: rgba(190,0,254,0.7);
       }
       @keyframes maintenance-glitch-h {
         0%   { transform: translate(0,0) skewX(0); filter: none; opacity: 1; }
