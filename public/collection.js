@@ -30,11 +30,13 @@ function showOrder(order) {
     <button class="clear-btn" id="clear-btn">Collected ✓</button>`;
 
   document.getElementById("clear-btn").addEventListener("click", () => clearOrder(order.order_ref));
+  document.body.classList.add("has-order");
   vibrate([200, 100, 200]);
 }
 
 function showEmpty() {
   orderSectionEl.innerHTML = `<div class="empty">No order assigned</div>`;
+  document.body.classList.remove("has-order");
 }
 
 async function clearOrder(ref) {
