@@ -427,6 +427,21 @@ export function createServer(config) {
         return;
       }
 
+      // Collection point screen clears order — customer has picked up.
+      const collectedMatch = url.pathname.match(/^\/api\/orders\/([^/]+)\/collected$/);
+      if (collectedMatch && req.method === "POST") {
+        const ref = collectedMatch[1];
+        const order = orderState.get(ref);
+        if (!order || order.state !== "collect") {
+          sendJson(res, 404, { error: "not-found", message: "Order not found at a collection point." });
+          return;
+        }
+        orderState.delete(ref);
+        collectedRefs.add(ref);
+        sendJson(res, 200, { order_ref: ref, state: "collected" });
+        return;
+      }
+
       if (url.pathname === "/pay/events" && req.method === "GET") {
         res.writeHead(200, {
           "Content-Type": "text/event-stream",

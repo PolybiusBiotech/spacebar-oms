@@ -39,14 +39,6 @@
       margin-bottom: 0.5em;
     }
 
-    .cp-number {
-      font-size: clamp(5rem, 30vw, 12rem);
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      line-height: 1;
-      color: #7CC142;
-      text-shadow: 0 0 40px rgba(124,193,66,0.35);
-    }
 
     .order-section {
       margin-top: 2rem;
@@ -54,7 +46,7 @@
     }
 
     .order-name {
-      font-size: clamp(2rem, 12vw, 5rem);
+      font-size: clamp(4rem, 22vw, 10rem);
       font-weight: 700;
       letter-spacing: 0.04em;
       color: #FCA311;
@@ -81,12 +73,42 @@
       text-transform: uppercase;
       color: rgba(124,193,66,0.2);
     }
+
+    @keyframes order-pulse {
+      0%, 100% { text-shadow: 0 0 24px rgba(252,163,17,0.35); }
+      50%       { text-shadow: 0 0 60px rgba(252,163,17,0.85); }
+    }
+
+    .order-name--active {
+      animation: order-arrive 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) both,
+                 order-pulse 2.5s ease-in-out 0.3s infinite;
+    }
+
+    .clear-btn {
+      margin-top: 2rem;
+      padding: 0.75em 2.5em;
+      font-family: inherit;
+      font-size: clamp(0.8rem, 3vw, 1.1rem);
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      background: transparent;
+      border: 2px solid rgba(252,163,17,0.4);
+      color: rgba(252,163,17,0.6);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .clear-btn:active {
+      border-color: rgba(252,163,17,1);
+      color: rgba(252,163,17,1);
+    }
   </style>
 </head>
 <body>
   <div class="crt-overlay" aria-hidden="true"></div>
-  <div class="cp-label">Collection Point</div>
-  <div class="cp-number" id="cp-number">—</div>
+  <div class="cp-label">Collection Point <span id="cp-number">—</span></div>
   <div class="order-section" id="order-section">
     <div class="empty">No order assigned</div>
   </div>
