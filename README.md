@@ -18,14 +18,14 @@ live state of all kiosk orders — from creation through payment to collection.
 | `/staff` | Staff tablet | Live order board — unpaid, processing, collect columns. Staff assign a collection point when moving an order to collect. |
 | `/status` or `/customer` | Customer display | Status board — order numbers only; no collection point shown (revealed at scan). |
 | `/scan` | Display at collection scanner | Reads receipt barcode from USB scanner; shows ORDER / HATCH\|TUBE\|HATCH & TUBE / collection point number. Resets after 12 s. |
-| `/collection/:n` | Phone at each collection point (1–6) | Shows which order is assigned to that collection point and whether it's ready. |
+| `/collection/:n` | Phone at each collection point (1–3) | Shows which order is assigned to that collection point and whether it's ready. |
 | `/pay` | iPhone at bar | Full-screen message display |
 | `/control` | Staff screen at till | Send messages to payment instruction screen; order-loaded + printer alerts |
 | `/pay/control` | Staff screen at till | Same as `/control` |
 
 ### Collection point flow
 
-1. Staff prepares order and moves it to **Collect**, picking a collection point (1–6).
+1. Staff prepares order and moves it to **Collect**, picking a collection point (1–3).
 2. Customer sees their order number appear in the **Ready to collect** column on `/status` — no collection point shown yet.
 3. Customer scans their receipt QR at the collection scanner (`/scan`).
 4. Scanner display shows: order number · **HATCH**, **TUBE**, or **HATCH & TUBE** · collection point number.
@@ -79,7 +79,7 @@ The kiosk server subscribes to `/pay/events` on startup and re-broadcasts `maint
 | Endpoint | Auth | Notes |
 |---|---|---|
 | `GET /api/orders` | none | All orders in OMS state machine, plus `printer_alerts`. Add `?order=<ref>` for a single order (used by badge). Each order includes `collection_point: number\|null`. |
-| `POST /api/orders/<ref>/collect` | none (VLAN-only) | Move order from `processing` → `collect`. Body: `{ collection_point: 1–6 }`. 400 if `collection_point` out of range; 409 if wrong state. |
+| `POST /api/orders/<ref>/collect` | none (VLAN-only) | Move order from `processing` → `collect`. Body: `{ collection_point: 1–3 }`. 400 if `collection_point` out of range; 409 if wrong state. |
 | `POST /api/orders/<ref>/id-check` | none (VLAN-only) | Log ID-check result (`approved` / `rejected`). `rejected` auto-pushes "REJECTED" to payment instruction screen. |
 
 ### Printer alerts
