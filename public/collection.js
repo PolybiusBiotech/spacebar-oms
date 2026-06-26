@@ -19,10 +19,6 @@ function escapeHtml(v) {
   return String(v ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 
-function vibrate(pattern) {
-  try { navigator.vibrate?.(pattern); } catch {}
-}
-
 function showOrder(order) {
   orderSectionEl.innerHTML = `
     <div class="order-name order-name--active">${escapeHtml(order.order_name)}</div>
@@ -31,7 +27,6 @@ function showOrder(order) {
 
   document.getElementById("clear-btn").addEventListener("click", () => clearOrder(order.order_ref));
   document.body.classList.add("has-order");
-  vibrate([200, 100, 200]);
 }
 
 function showEmpty() {
