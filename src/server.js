@@ -410,11 +410,16 @@ export function createServer(config) {
           sendJson(res, 400, { error: "bad-collection-point", message: "collection_point must be an integer 1–3." });
           return;
         }
-        // Displace any existing order at this collection point
+        // Displace any existing order at this collection point.
+        // If already scanned, complete it; if still waiting, move back to processing.
         for (const [existingRef, existingOrder] of orderState) {
           if (existingOrder.state === "collect" && existingOrder.collection_point === collection_point) {
-            orderState.delete(existingRef);
-            collectedRefs.add(existingRef);
+            if (existingOrder.scanned) {
+              orderState.delete(existingRef);
+              collectedRefs.add(existingRef);
+            } else {
+              orderState.set(existingRef, { ...existingOrder, state: "processing", collectAt: null, collection_point: null });
+            }
           }
         }
         const collected = { ...order, state: "collect", collectAt: Date.now(), collection_point };
