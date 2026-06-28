@@ -38,7 +38,7 @@ live state of all kiosk orders — from creation through payment to collection.
 
 The payment instruction screen (`/pay`) shows a message pushed from the staff control page (`/control`) over SSE. Default state is **PAY HERE** (large green). Other messages appear in purple. All connected clients stay in sync — the control page is itself an SSE subscriber and reflects the current state.
 
-**Presets:** PAY HERE · PRESENT ID · REJECTED · APPROVED — PAY BELOW ·
+**Presets:** PAY HERE · PRESENT ID · REFUSED · APPROVED — PAY BELOW ·
 PAYMENT PROCESSED · PLEASE WAIT · NEXT CUSTOMER
 
 **Idle timeout:** non-default messages auto-clear back to PAY HERE after 30 seconds of inactivity.

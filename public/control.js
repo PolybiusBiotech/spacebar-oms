@@ -116,6 +116,8 @@ let masterGain = null;
 const orderAlertEl = document.getElementById("order-alert");
 const orderAlertRefEl = document.getElementById("order-alert-ref");
 const btnIdReject = document.getElementById("btn-id-reject");
+const btnRejectDismiss = document.getElementById("btn-reject-dismiss");
+const controlBody = document.querySelector(".control-body");
 
 let currentOrderRef = null;
 
@@ -146,34 +148,47 @@ function playOrderBeep() {
   } catch {}
 }
 
-function showOrderAlert(orderRef, softOnly = false) {
+function dismissOrderAlert() {
+  clearTimeout(orderAlertTimer);
+  orderAlertTimer = null;
+  orderAlertEl.hidden = true;
+  orderAlertEl.classList.remove("order-alert--prev-rejected");
+  controlBody.classList.remove("control-body--locked");
+  currentOrderRef = null;
+}
+
+function showOrderAlert(orderRef, softOnly = false, previouslyRejected = false) {
   clearTimeout(orderAlertTimer);
   currentOrderRef = orderRef;
   orderAlertRefEl.textContent = orderRef;
   orderAlertEl.hidden = false;
   orderAlertEl.classList.toggle("order-alert--soft-only", softOnly);
+  orderAlertEl.classList.toggle("order-alert--prev-rejected", previouslyRejected);
+  controlBody.classList.toggle("control-body--locked", previouslyRejected);
   const labelEl = orderAlertEl.querySelector(".order-alert-label");
-  if (labelEl) labelEl.textContent = softOnly ? "Soft-only — auto pay" : "Order loaded";
+  if (labelEl) labelEl.textContent = softOnly ? "Soft-only — auto pay" : previouslyRejected ? "⚠ Previously refused" : "Order loaded";
   if (!softOnly) playOrderBeep();
   document.body.classList.remove("order-flash");
   void document.body.offsetWidth;
   document.body.classList.add("order-flash");
   document.body.addEventListener("animationend", () => document.body.classList.remove("order-flash"), { once: true });
-  orderAlertTimer = setTimeout(() => { orderAlertEl.hidden = true; currentOrderRef = null; }, 5000);
+  if (!previouslyRejected) {
+    orderAlertTimer = setTimeout(dismissOrderAlert, 5000);
+  }
 }
 
 btnIdReject.addEventListener("click", async () => {
   const ref = currentOrderRef;
   if (!ref) return;
-  orderAlertEl.hidden = true;
-  currentOrderRef = null;
-  clearTimeout(orderAlertTimer);
+  dismissOrderAlert();
   await fetch(`/api/orders/${encodeURIComponent(ref)}/id-check`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ result: "rejected" })
   });
 });
+
+btnRejectDismiss.addEventListener("click", dismissOrderAlert);
 
 let currentDisplayMessage = "";
 let reconnectDelay = 3000;
@@ -200,8 +215,8 @@ function connect() {
   };
   es.addEventListener("order-loaded", e => {
     try {
-      const { order_ref, soft_only } = JSON.parse(e.data);
-      showOrderAlert(order_ref, soft_only);
+      const { order_ref, soft_only, previously_rejected } = JSON.parse(e.data);
+      showOrderAlert(order_ref, soft_only, previously_rejected);
     } catch {}
   });
   es.addEventListener("maintenance", e => {

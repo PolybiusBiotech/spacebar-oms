@@ -29,6 +29,10 @@ const orderState = new Map();
 // Refs that have been collected — never re-enter the state machine after collect timeout.
 const collectedRefs = new Set();
 
+// Refs that were ID-rejected this session. Map<order_ref, timestamp_ms>.
+const REJECTED_TTL_MS = 15 * 60 * 1000;
+const rejectedCache = new Map();
+
 // In-memory printer alerts from kiosks. Keyed by location, last alert wins.
 // { [location]: { message, at } }
 const printerAlerts = {};
@@ -469,7 +473,11 @@ export function createServer(config) {
         const orderRef = String(body.order_ref ?? "").slice(0, 40);
         const softOnly = Boolean(body.soft_only);
         if (orderRef) {
-          const payload = `event: order-loaded\ndata: ${JSON.stringify({ order_ref: orderRef, soft_only: softOnly })}\n\n`;
+          const rejectedAt = rejectedCache.get(orderRef);
+          const previouslyRejected = rejectedAt != null && (Date.now() - rejectedAt) < REJECTED_TTL_MS;
+          if (!previouslyRejected) rejectedCache.delete(orderRef);
+          if (previouslyRejected) setPayMessage("REFUSED");
+          const payload = `event: order-loaded\ndata: ${JSON.stringify({ order_ref: orderRef, soft_only: softOnly, previously_rejected: previouslyRejected })}\n\n`;
           for (const client of payClients) client.write(payload);
           console.log(`[pay] order loaded: ${orderRef}${softOnly ? " (soft-only)" : ""}`);
           if (softOnly) logIdCheck(config, orderRef, "soft_only_no_check");
@@ -489,7 +497,8 @@ export function createServer(config) {
           ? body.result : "rejected";
         if (result !== "id_requested") logIdCheck(config, ref, result);
         if (result === "rejected") {
-          setPayMessage("REJECTED");
+          setPayMessage("REFUSED");
+          rejectedCache.set(ref, Date.now());
           markRejected(config, ref).catch(err =>
             console.error(`[id-check] Failed to mark ${ref} rejected in tillweb: ${err.message}`)
           );

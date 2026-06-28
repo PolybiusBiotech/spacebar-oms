@@ -32,7 +32,7 @@ const RECONNECT_MAX  = 30_000;
 // Messages sent from the control page plain/serious mode — no ghost layer
 const PLAIN_MESSAGES = new Set([
   "PRESENT ID",
-  "REJECTED",
+  "REFUSED",
   "APPROVED\nPAY BELOW",
   "PAYMENT PROCESSED",
   "PLEASE WAIT",
@@ -94,7 +94,11 @@ function connect() {
       const { message } = JSON.parse(e.data);
       reconnectDelay = RECONNECT_BASE;
       currentMessage = message || "PAY HERE";
-      if (!orderLoadedTimer) applyMessage(currentMessage);
+      if (currentMessage !== "PAY HERE" || !orderLoadedTimer) {
+        clearTimeout(orderLoadedTimer);
+        orderLoadedTimer = null;
+        applyMessage(currentMessage);
+      }
     } catch {}
   };
 
@@ -113,8 +117,8 @@ function connect() {
 
   es.addEventListener("order-loaded", e => {
     try {
-      const { order_ref, soft_only } = JSON.parse(e.data);
-      showOrderLoaded(order_ref, soft_only);
+      const { order_ref, soft_only, previously_rejected } = JSON.parse(e.data);
+      if (!previously_rejected) showOrderLoaded(order_ref, soft_only);
     } catch {}
   });
 
