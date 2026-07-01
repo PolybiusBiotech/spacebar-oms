@@ -1,4 +1,3 @@
-import fs from "node:fs/promises";
 import http from "node:http";
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -6,13 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { loadConfig, validateRuntimeConfig } from "./config.js";
 import { fetchOrders, markCollected, markRejected, TillwebError } from "./tillweb.js";
-
-const MIME_TYPES = {
-  ".html": "text/html; charset=utf-8",
-  ".css": "text/css; charset=utf-8",
-  ".js": "text/javascript; charset=utf-8",
-  ".json": "application/json; charset=utf-8"
-};
+import { sendJson, serveStatic } from "@spacebar/shared/http-helpers.js";
 
 const COLLECT_TIMEOUT_MS = 2 * 60 * 1000;
 
@@ -83,8 +76,7 @@ function logCollect(config, order) {
   if (!config.collectLog) return;
   const entry = {
     collected_at: new Date().toISOString(),
-    order_ref: order.order_ref,
-    order_name: order.order_name,
+    transaction_id: order.transaction_id,
     total: order.total,
     created_at: order.created_at,
     lines: order.lines ?? []
@@ -107,32 +99,26 @@ function logIdCheck(config, orderRef, result) {
   }
 }
 
-function broadcastPayMessage() {
-  const data = `data: ${JSON.stringify({ message: payMessage })}\n\n`;
+function broadcast(data) {
   for (const res of payClients) {
     try { res.write(data); } catch { payClients.delete(res); }
   }
+}
+
+function broadcastPayMessage() {
+  broadcast(`data: ${JSON.stringify({ message: payMessage })}\n\n`);
 }
 
 function broadcastMaintenance() {
-  const data = `event: maintenance\ndata: ${JSON.stringify({ active: maintenanceMode, reopeningAt: maintenanceReopeningAt })}\n\n`;
-  for (const res of payClients) {
-    try { res.write(data); } catch { payClients.delete(res); }
-  }
+  broadcast(`event: maintenance\ndata: ${JSON.stringify({ active: maintenanceMode, reopeningAt: maintenanceReopeningAt })}\n\n`);
 }
 
 function broadcastKioskOnlyMaintenance() {
-  const data = `event: kiosk-maintenance\ndata: ${JSON.stringify({ active: kioskMaintenanceMode, reopeningAt: kioskMaintenanceReopeningAt })}\n\n`;
-  for (const res of payClients) {
-    try { res.write(data); } catch { payClients.delete(res); }
-  }
+  broadcast(`event: kiosk-maintenance\ndata: ${JSON.stringify({ active: kioskMaintenanceMode, reopeningAt: kioskMaintenanceReopeningAt })}\n\n`);
 }
 
 function broadcastPrinterAlerts() {
-  const data = `event: printer-alert\ndata: ${JSON.stringify({ alerts: printerAlerts })}\n\n`;
-  for (const res of payClients) {
-    try { res.write(data); } catch { payClients.delete(res); }
-  }
+  broadcast(`event: printer-alert\ndata: ${JSON.stringify({ alerts: printerAlerts })}\n\n`);
 }
 
 function setPayMessage(msg) {
@@ -197,8 +183,8 @@ async function pollLoop(config) {
     if (delayMs > 0) await new Promise(r => setTimeout(r, delayMs));
     try {
       const orders = await fetchOrders(config);
-      const liveRefs = new Set(orders.map(o => o.order_ref));
-      for (const order of orders) transitionOrder(order.order_ref, order);
+      const liveRefs = new Set(orders.map(o => String(o.transaction_id)));
+      for (const order of orders) transitionOrder(String(order.transaction_id), order);
       pruneOrders(liveRefs);
       if (firstPoll) {
         console.log(`[poll] Cold-start: ${orders.length} order(s) loaded from till.`);
@@ -249,14 +235,12 @@ function randomMockLines() {
 function mockOrders() {
   const orders = [];
   for (let i = 42; i <= 44; i++) {
-    const ref = String(10000 + i);
     const lines = randomMockLines();
-    orders.push({ order_ref: ref, order_name: ref, paid: false, lines, total: lines.reduce((s, l) => s + parseFloat(l.line_total), 0).toFixed(2), created_at: new Date().toISOString() });
+    orders.push({ transaction_id: 10000 + i, paid: false, lines, total: lines.reduce((s, l) => s + parseFloat(l.line_total), 0).toFixed(2), created_at: new Date().toISOString() });
   }
   for (let i = 45; i < 95; i++) {
-    const ref = String(10000 + i);
     const lines = randomMockLines();
-    orders.push({ order_ref: ref, order_name: ref, paid: true, lines, total: lines.reduce((s, l) => s + parseFloat(l.line_total), 0).toFixed(2), created_at: new Date().toISOString() });
+    orders.push({ transaction_id: 10000 + i, paid: true, lines, total: lines.reduce((s, l) => s + parseFloat(l.line_total), 0).toFixed(2), created_at: new Date().toISOString() });
   }
   return orders;
 }
@@ -264,65 +248,34 @@ function mockOrders() {
 function seedMockCollect() {
   const now = Date.now();
   const seeds = [
-    ["10048", 1, [
+    [10048, 1, [
       { quantity: 2, description: "Jack Daniels and Coca Cola (330ml)", line_total: "10.00" },
       { quantity: 1, description: "Nice Pale Rosé 187ml",               line_total: "5.00"  },
     ]],
-    ["10049", 2, [
+    [10049, 2, [
       { quantity: 1, description: "BuzzBallz Chilli Mango",             line_total: "6.50"  },
       { quantity: 1, description: "BuzzBallz Lotta Colada",             line_total: "6.50"  },
     ]],
-    ["10050", 3, [
+    [10050, 3, [
       { quantity: 1, description: "BuzzBallz Espresso Martini",         line_total: "6.50"  },
       { quantity: 1, description: "Tanqueray and Tonic (250ml)",        line_total: "5.00"  },
       { quantity: 1, description: "Nice Sauvignon Blanc 187ml",         line_total: "5.00"  },
     ]],
   ];
-  for (const [ref, collection_point, lines] of seeds) {
-    orderState.set(ref, {
-      order_ref: ref, order_name: ref, total: lines.reduce((s, l) => s + parseFloat(l.line_total), 0).toFixed(2),
+  for (const [transaction_id, collection_point, lines] of seeds) {
+    orderState.set(String(transaction_id), {
+      transaction_id, total: lines.reduce((s, l) => s + parseFloat(l.line_total), 0).toFixed(2),
       state: "collect", collectAt: now, collection_point, lines, scanned: false,
       created_at: new Date().toISOString(),
     });
   }
 }
 
-function sendJson(res, status, payload) {
-  const body = JSON.stringify(payload);
-  res.writeHead(status, {
-    "Content-Type": "application/json; charset=utf-8",
-    "Cache-Control": "no-store",
-    "Content-Length": Buffer.byteLength(body)
-  });
-  res.end(body);
-}
-
-async function serveStatic(config, req, res) {
-  const requestUrl = new URL(req.url, `http://${req.headers.host}`);
-  const safePath = path
-    .normalize(decodeURIComponent(requestUrl.pathname))
-    .replace(/^(\.\.[/\\])+/, "");
-  const relativePath = safePath === "/" ? "index.html" : safePath.replace(/^[/\\]/, "");
-  const filePath = path.join(config.publicDir, relativePath);
-
-  if (!filePath.startsWith(config.publicDir)) {
-    res.writeHead(403);
-    res.end("Forbidden");
-    return;
-  }
-
-  try {
-    const body = await fs.readFile(filePath);
-    const ext = path.extname(filePath);
-    res.writeHead(200, {
-      "Content-Type": MIME_TYPES[ext] ?? "application/octet-stream",
-      "Cache-Control": "no-store"
-    });
-    res.end(body);
-  } catch {
-    res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
-    res.end("Not found");
-  }
+async function readBody(req) {
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+  if (!chunks.length) return {};
+  try { return JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch { return {}; }
 }
 
 export function createServer(config) {
@@ -336,10 +289,7 @@ export function createServer(config) {
       }
 
       if (url.pathname === "/api/printer-alert" && req.method === "POST") {
-        const chunks = [];
-        for await (const chunk of req) chunks.push(chunk);
-        let body = {};
-        try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch {}
+        const body = await readBody(req);
         const location = body.location || "unknown";
         printerAlerts[location] = { message: body.message || "Printer error", at: body.at || new Date().toISOString() };
         console.warn(`[printer-alert] ${location}: ${printerAlerts[location].message}`);
@@ -349,10 +299,7 @@ export function createServer(config) {
       }
 
       if (url.pathname === "/api/printer-alert" && req.method === "DELETE") {
-        const chunks = [];
-        for await (const chunk of req) chunks.push(chunk);
-        let body = {};
-        try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch {}
+        const body = await readBody(req);
         if (body.location) delete printerAlerts[body.location];
         else Object.keys(printerAlerts).forEach(k => delete printerAlerts[k]);
         broadcastPrinterAlerts();
@@ -370,13 +317,13 @@ export function createServer(config) {
           if (!o) {
             sendJson(res, 404, { error: "not-found", kiosk_maintenance: kioskMaint });
           } else {
-            sendJson(res, 200, { order: { order_ref: o.order_ref, state: o.state }, kiosk_maintenance: kioskMaint });
+            sendJson(res, 200, { order: { order_ref: String(o.transaction_id), state: o.state }, kiosk_maintenance: kioskMaint });
           }
           return;
         }
         const orders = [...orderState.values()].map(o => ({
-          order_ref: o.order_ref,
-          order_name: o.order_name,
+          order_ref: String(o.transaction_id),
+          order_name: String(o.transaction_id),
           total: o.total,
           lines: o.lines,
           created_at: o.created_at,
@@ -401,10 +348,7 @@ export function createServer(config) {
           sendJson(res, 409, { error: "wrong-state", message: `Order is ${order.state}, not processing.` });
           return;
         }
-        const chunks = [];
-        for await (const chunk of req) chunks.push(chunk);
-        let body = {};
-        try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch {}
+        const body = await readBody(req);
         const collection_point = Number(body.collection_point);
         if (!Number.isInteger(collection_point) || collection_point < 1 || collection_point > 3) {
           sendJson(res, 400, { error: "bad-collection-point", message: "collection_point must be an integer 1–3." });
@@ -471,10 +415,7 @@ export function createServer(config) {
       }
 
       if (url.pathname === "/pay/order-loaded" && req.method === "POST") {
-        const chunks = [];
-        for await (const chunk of req) chunks.push(chunk);
-        let body = {};
-        try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch {}
+        const body = await readBody(req);
         const orderRef = String(body.order_ref ?? "").slice(0, 40);
         const softOnly = Boolean(body.soft_only);
         if (orderRef) {
@@ -494,10 +435,7 @@ export function createServer(config) {
       const idCheckMatch = url.pathname.match(/^\/api\/orders\/([^/]+)\/id-check$/);
       if (idCheckMatch && req.method === "POST") {
         const ref = decodeURIComponent(idCheckMatch[1]);
-        const chunks = [];
-        for await (const chunk of req) chunks.push(chunk);
-        let body = {};
-        try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch {}
+        const body = await readBody(req);
         const result = ["approved", "rejected", "id_requested"].includes(body.result)
           ? body.result : "rejected";
         if (result !== "id_requested") logIdCheck(config, ref, result);
@@ -513,10 +451,7 @@ export function createServer(config) {
       }
 
       if (url.pathname === "/pay/message" && req.method === "POST") {
-        const chunks = [];
-        for await (const chunk of req) chunks.push(chunk);
-        let body = {};
-        try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch {}
+        const body = await readBody(req);
         setPayMessage(String(body.message ?? "").slice(0, 200));
         sendJson(res, 200, { ok: true, message: payMessage });
         return;
@@ -529,10 +464,7 @@ export function createServer(config) {
       }
 
       if (url.pathname === "/maintenance" && req.method === "POST") {
-        const chunks = [];
-        for await (const chunk of req) chunks.push(chunk);
-        let body = {};
-        try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch {}
+        const body = await readBody(req);
         maintenanceMode = Boolean(body.active);
         if (body.reopeningAt !== undefined) maintenanceReopeningAt = String(body.reopeningAt ?? "");
         saveMaintenanceState();
@@ -543,10 +475,7 @@ export function createServer(config) {
       }
 
       if (url.pathname === "/kiosk-maintenance" && req.method === "POST") {
-        const chunks = [];
-        for await (const chunk of req) chunks.push(chunk);
-        let body = {};
-        try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch {}
+        const body = await readBody(req);
         kioskMaintenanceMode = Boolean(body.active);
         if (body.reopeningAt !== undefined) kioskMaintenanceReopeningAt = String(body.reopeningAt ?? "");
         saveKioskMaintenanceState();
@@ -583,13 +512,13 @@ export function createServer(config) {
 
       // Clean URLs for the OMS screens
       const collectionRouteMatch = url.pathname.match(/^\/collection\/([1-3])$/);
-      if (collectionRouteMatch) { req.url = "/collection.html"; await serveStatic(config, req, res); return; }
+      if (collectionRouteMatch) { req.url = "/collection.html"; await serveStatic(config.publicDir, req, res); return; }
 
       const rewrites = { "/status": "/status.html", "/customer": "/status.html", "/staff": "/staff.html", "/pay": "/pay.html", "/control": "/control.html", "/pay/control": "/control.html", "/scan": "/scan.html" };
       if (rewrites[url.pathname]) req.url = rewrites[url.pathname];
 
       if (req.method === "GET" || req.method === "HEAD") {
-        await serveStatic(config, req, res);
+        await serveStatic(config.publicDir, req, res);
         return;
       }
 
@@ -606,7 +535,7 @@ if (isMain) {
 
   if (config.mockMode) {
     for (const order of mockOrders()) {
-      transitionOrder(order.order_ref, order);
+      transitionOrder(String(order.transaction_id), order);
     }
     seedMockCollect();
     console.log("Mock mode: pre-loaded sample orders.");

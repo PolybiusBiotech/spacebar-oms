@@ -78,7 +78,7 @@ The kiosk server subscribes to `/pay/events` on startup and re-broadcasts `maint
 
 | Endpoint | Auth | Notes |
 |---|---|---|
-| `GET /api/orders` | none | All orders in OMS state machine, plus `printer_alerts`. Add `?order=<ref>` for a single order (used by badge). Each order includes `collection_point: number\|null`. |
+| `GET /api/orders` | none | All orders in OMS state machine, plus `printer_alerts`. Add `?order=<ref>` for a single order (used by badge). `order_ref` is the tillweb `transaction_id` as a string. Each order includes `collection_point: number\|null`. |
 | `POST /api/orders/<ref>/collect` | none (VLAN-only) | Move order from `processing` → `collect`. Body: `{ collection_point: 1–3 }`. 400 if `collection_point` out of range; 409 if wrong state. |
 | `POST /api/orders/<ref>/id-check` | none (VLAN-only) | Log ID-check result (`approved` / `rejected`). `rejected` auto-pushes "REJECTED" to payment instruction screen. |
 
@@ -151,6 +151,12 @@ journalctl -u spacebar-oms.service -f
 curl http://127.0.0.1:8081/healthz
 ```
 
+## Dependencies
+
+Runtime: `@spacebar/shared` (shared HTTP and tillweb helpers).
+
+`@spacebar/shared` is fetched from [PolybiusBiotech/spacebar-shared](https://github.com/PolybiusBiotech/spacebar-shared) by `npm install` — no manual setup needed.
+
 ## Tillweb dependency
 
-Requires `GET /api/kiosk/orders.json` in emftillweb — implemented and merged.
+Requires `GET /api/kiosk/orders/` in emftillweb — implemented and merged.
