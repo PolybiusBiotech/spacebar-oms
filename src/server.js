@@ -173,14 +173,45 @@ function pruneOrders(liveRefs) {
   }
 }
 
+// Lets an in-flight backoff sleep be cut short (e.g. by an /pay/order-paid
+// notification) so the next poll runs immediately instead of waiting out
+// the rest of the interval. No-op when no sleep is currently pending.
+let wakePoll = () => {};
+
+function pollSleep(ms) {
+  return new Promise(resolve => {
+    const timer = setTimeout(() => { wakePoll = () => {}; resolve(); }, ms);
+    wakePoll = () => { clearTimeout(timer); wakePoll = () => {}; resolve(); };
+  });
+}
+
+function triggerImmediatePoll() {
+  wakePoll();
+}
+
 async function pollLoop(config) {
   const baseMs = config.pollInterval * 1000;
   const maxMs = 60_000;
   let delayMs = 0;
   let firstPoll = true;
+  let paused = false;
 
   while (true) {
-    if (delayMs > 0) await new Promise(r => setTimeout(r, delayMs));
+    if (maintenanceMode) {
+      if (!paused) {
+        console.log("[poll] Paused — full maintenance mode active.");
+        paused = true;
+      }
+      await new Promise(r => setTimeout(r, baseMs));
+      continue;
+    }
+    if (paused) {
+      console.log("[poll] Resuming — maintenance mode cleared.");
+      paused = false;
+      delayMs = 0;
+      firstPoll = true;
+    }
+    if (delayMs > 0) await pollSleep(delayMs);
     try {
       const orders = await fetchOrders(config);
       const liveRefs = new Set(orders.map(o => String(o.transaction_id)));
@@ -427,6 +458,20 @@ export function createServer(config) {
           for (const client of payClients) client.write(payload);
           console.log(`[pay] order loaded: ${orderRef}${softOnly ? " (soft-only)" : ""}`);
           if (softOnly) logIdCheck(config, orderRef, "soft_only_no_check");
+        }
+        sendJson(res, 200, { ok: true });
+        return;
+      }
+
+      // Till notifies us the moment a kiosk transaction is paid — we don't
+      // trust this as proof of payment, we just use it to shortcut the next
+      // poll. `paid` still comes solely from the authenticated tillweb poll.
+      if (url.pathname === "/pay/order-paid" && req.method === "POST") {
+        const body = await readBody(req);
+        const orderRef = String(body.order_ref ?? "").slice(0, 40);
+        if (orderRef) {
+          console.log(`[pay] order paid (till notify): ${orderRef} — triggering immediate poll`);
+          triggerImmediatePoll();
         }
         sendJson(res, 200, { ok: true });
         return;
