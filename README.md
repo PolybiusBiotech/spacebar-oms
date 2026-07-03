@@ -43,7 +43,7 @@ PAYMENT PROCESSED · PLEASE WAIT · NEXT CUSTOMER
 
 **Idle timeout:** non-default messages auto-clear back to PAY HERE after 30 seconds of inactivity.
 
-**Order-loaded alert:** when the barcode scanner at the till reads a QR/slip, the recall plugin fires `POST /pay/order-loaded`. The control page shows a 5-second pop-up with the order ref and an "ID Rejected" shortcut button. Soft-only orders show a green "auto pay" variant.
+**Order-loaded alert:** when the barcode scanner at the till reads a QR/slip, the recall plugin fires `POST /pay/order-loaded`. The control page shows a 5-second pop-up with the order ref and a "✗ Refuse service" shortcut button. Soft-only orders show a green "auto pay" variant. If the order was ID-rejected earlier in the session, the pop-up instead becomes a persistent "⚠ Previously refused" warning that locks the control screen (see `previously_rejected` below).
 
 **Printer alerts:** when a kiosk printer fails it POSTs to `POST /api/printer-alert`. The control page shows a persistent orange banner per kiosk. Staff clear it with the "Clear" button once the printer is fixed. Alerts are pushed over SSE and replayed on reconnect. They do **not** appear on the customer-facing `/pay` display.
 
@@ -52,7 +52,7 @@ PAYMENT PROCESSED · PLEASE WAIT · NEXT CUSTOMER
 | Event | Who listens | Payload |
 |---|---|---|
 | *(unnamed message)* | `/pay` and `/control` | `{ message }` — current display text |
-| `order-loaded` | `/control` only | `{ order_ref, soft_only }` |
+| `order-loaded` | `/pay` and `/control` | `{ order_ref, soft_only, previously_rejected }` — `previously_rejected` is true if this order was ID-rejected earlier in the session; it locks the control screen with a persistent warning instead of the usual 5-second auto-dismiss pop-up, and suppresses the order-ref pop-up on the customer-facing `/pay` display (which shows REFUSED instead) |
 | `printer-alert` | `/control` only | `{ alerts: { location: { message, at } } }` |
 | `maintenance` | `/pay`, `/customer`, `/control`, kiosk | `{ active, reopeningAt }` — maintenance mode state; replayed on SSE reconnect |
 | `kiosk-maintenance` | kiosk, badge | `{ active, reopeningAt }` — kiosk-only maintenance; OMS screens unaffected; replayed on reconnect |
@@ -63,8 +63,8 @@ The kiosk server subscribes to `/pay/events` on startup and re-broadcasts `maint
 
 ## Runtime shape
 
-- A dependency-free Node.js server polls tillweb for order state and serves the
-  board UI on localhost.
+- A small Node.js server (see Dependencies below) polls tillweb for order
+  state and serves the board UI on localhost.
 - The browser polls the local server every 3 seconds.
 - Operators tap **Ready to collect** on the board to move an order to the collect
   column; it clears automatically after 2 minutes.
@@ -78,9 +78,9 @@ The kiosk server subscribes to `/pay/events` on startup and re-broadcasts `maint
 
 | Endpoint | Auth | Notes |
 |---|---|---|
-| `GET /api/orders` | none | All orders in OMS state machine, plus `printer_alerts`. Add `?order=<ref>` for a single order (used by badge). `order_ref` is the tillweb `transaction_id` as a string. Each order includes `collection_point: number\|null`. |
-| `POST /api/orders/<ref>/collect` | none (VLAN-only) | Move order from `processing` → `collect`. Body: `{ collection_point: 1–3 }`. 400 if `collection_point` out of range; 409 if wrong state. |
-| `POST /api/orders/<ref>/id-check` | none (VLAN-only) | Log ID-check result (`approved` / `rejected`). `rejected` auto-pushes "REJECTED" to payment instruction screen. |
+| `GET /api/orders` | none | All orders in OMS state machine, plus `printer_alerts` and `kiosk_maintenance: { active, reopeningAt? }`. Add `?order=<ref>` for a single order (used by badge). `order_ref` is the tillweb `transaction_id` as a string. Each order includes `collection_point: number\|null`. |
+| `POST /api/orders/<ref>/collect` | none (VLAN-only) | Move order from `processing` → `collect`. Body: `{ collection_point: 1–3 }`. 400 if `collection_point` out of range; 409 if wrong state. Displaces any order already sitting at that collection point: if it hasn't been scanned yet it's bumped back to `processing`; if it was already scanned it's completed/removed. |
+| `POST /api/orders/<ref>/id-check` | none (VLAN-only) | Log ID-check result (`approved` / `rejected` / `id_requested`). `id_requested` is not written to the ID-check audit log. `rejected` auto-pushes "REFUSED" to the payment instruction screen. |
 
 ### Printer alerts
 
@@ -97,7 +97,7 @@ The kiosk server subscribes to `/pay/events` on startup and re-broadcasts `maint
 | `POST /pay/message` | none (VLAN-only) | Body: `{ message }`. Pushes to display, resets idle timer. |
 | `POST /pay/clear` | none (VLAN-only) | Reset display to PAY HERE immediately. |
 | `POST /pay/order-loaded` | none (VLAN-only) | Body: `{ order_ref, soft_only }`. Called by quicktill-kiosk-plugin on scan. |
-| `POST /pay/order-paid` | none (VLAN-only) | Body: `{ order_ref }`. Called by quicktill-kiosk-plugin when a kiosk transaction closes. Not trusted as proof of payment — only shortcuts the poll loop to fetch again ~1s later (delayed to avoid racing the till's own commit), never sooner than the next poll would've fired anyway. `paid` state still comes solely from that poll. |
+| `POST /pay/order-paid` | none (VLAN-only) | Body: `{ order_ref }`. Called by quicktill-kiosk-plugin when a kiosk transaction closes. Not trusted as proof of payment — only shortcuts the poll loop to fetch again 1.5s later (`REPOLL_DELAY_MS`, delayed to avoid racing the till's own commit), never sooner than the next poll would've fired anyway. `paid` state still comes solely from that poll. |
 
 ### Maintenance mode
 
@@ -123,7 +123,9 @@ npm start
 ```
 
 For local work without a live till, set `OMS_MOCK_MODE=true` — the server
-pre-loads two sample orders (one unpaid, one processing).
+pre-loads a larger mixed set of unpaid/processing/collect orders for UI
+testing (see `mockOrders()`/`seedMockCollect()` in `src/server.js` for the
+exact counts).
 
 To run against the local mock till (badge sim included), see
 [`dev/README.md`](../dev/README.md) in the top-level repo.
@@ -160,4 +162,4 @@ Runtime: `@spacebar/shared` (shared HTTP and tillweb helpers).
 
 ## Tillweb dependency
 
-Requires `GET /api/kiosk/orders/` in emftillweb — implemented and merged.
+Requires `GET /api/kiosk/orders` in emftillweb — implemented and merged.
