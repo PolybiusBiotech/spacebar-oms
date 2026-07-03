@@ -173,20 +173,41 @@ function pruneOrders(liveRefs) {
   }
 }
 
-// Lets an in-flight backoff sleep be cut short (e.g. by an /pay/order-paid
-// notification) so the next poll runs immediately instead of waiting out
-// the rest of the interval. No-op when no sleep is currently pending.
+// Lets an in-flight backoff sleep be cut short (e.g. by a /pay/order-paid
+// notification) so the next poll runs sooner than waiting out the rest of
+// the interval. No-op when no sleep is currently pending.
 let wakePoll = () => {};
+
+// hook_close_transaction on the till fires just before the transaction is
+// actually committed as closed, so tillweb may not yet reflect `paid: true`
+// the instant the notification arrives. Polling after a short delay instead
+// of immediately avoids racing that commit.
+const REPOLL_DELAY_MS = 1500;
 
 function pollSleep(ms) {
   return new Promise(resolve => {
-    const timer = setTimeout(() => { wakePoll = () => {}; resolve(); }, ms);
-    wakePoll = () => { clearTimeout(timer); wakePoll = () => {}; resolve(); };
+    let fireAt = Date.now() + ms;
+    let timer = setTimeout(finish, ms);
+
+    function finish() {
+      wakePoll = () => {};
+      resolve();
+    }
+
+    // Only reschedules if it would make the poll fire sooner — never delays
+    // a poll that was already due to fire before `afterMs` from now.
+    wakePoll = afterMs => {
+      const candidate = Date.now() + afterMs;
+      if (candidate >= fireAt) return;
+      fireAt = candidate;
+      clearTimeout(timer);
+      timer = setTimeout(finish, afterMs);
+    };
   });
 }
 
-function triggerImmediatePoll() {
-  wakePoll();
+function triggerEarlyPoll() {
+  wakePoll(REPOLL_DELAY_MS);
 }
 
 async function pollLoop(config) {
@@ -470,8 +491,8 @@ export function createServer(config) {
         const body = await readBody(req);
         const orderRef = String(body.order_ref ?? "").slice(0, 40);
         if (orderRef) {
-          console.log(`[pay] order paid (till notify): ${orderRef} — triggering immediate poll`);
-          triggerImmediatePoll();
+          console.log(`[pay] order paid (till notify): ${orderRef} — polling again in ${REPOLL_DELAY_MS}ms`);
+          triggerEarlyPoll();
         }
         sendJson(res, 200, { ok: true });
         return;

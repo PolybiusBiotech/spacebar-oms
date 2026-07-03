@@ -97,7 +97,7 @@ The kiosk server subscribes to `/pay/events` on startup and re-broadcasts `maint
 | `POST /pay/message` | none (VLAN-only) | Body: `{ message }`. Pushes to display, resets idle timer. |
 | `POST /pay/clear` | none (VLAN-only) | Reset display to PAY HERE immediately. |
 | `POST /pay/order-loaded` | none (VLAN-only) | Body: `{ order_ref, soft_only }`. Called by quicktill-kiosk-plugin on scan. |
-| `POST /pay/order-paid` | none (VLAN-only) | Body: `{ order_ref }`. Called by quicktill-kiosk-plugin when a kiosk transaction closes. Not trusted as proof of payment — only triggers an immediate re-poll of tillweb; `paid` state still comes solely from that poll. |
+| `POST /pay/order-paid` | none (VLAN-only) | Body: `{ order_ref }`. Called by quicktill-kiosk-plugin when a kiosk transaction closes. Not trusted as proof of payment — only shortcuts the poll loop to fetch again ~1s later (delayed to avoid racing the till's own commit), never sooner than the next poll would've fired anyway. `paid` state still comes solely from that poll. |
 
 ### Maintenance mode
 
