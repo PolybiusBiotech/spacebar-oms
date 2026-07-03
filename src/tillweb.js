@@ -6,7 +6,7 @@ function request(config, pathname, options = {}) {
 }
 
 export async function fetchOrders(config) {
-  const data = await request(config, "/api/kiosk/orders/");
+  const data = await request(config, `/api/kiosk/orders/`);
   return data.orders ?? [];
 }
 
