@@ -297,7 +297,7 @@ function mockOrders() {
   return orders;
 }
 
-function seedMockCollect() {
+function seedMockCollect(requireCollectScan) {
   const now = Date.now();
   const seeds = [
     [10048, 1, [
@@ -317,7 +317,7 @@ function seedMockCollect() {
   for (const [transaction_id, collection_point, lines] of seeds) {
     orderState.set(String(transaction_id), {
       transaction_id, total: lines.reduce((s, l) => s + parseFloat(l.line_total), 0).toFixed(2),
-      state: "collect", collectAt: now, collection_point, lines, scanned: false,
+      state: "collect", collectAt: now, collection_point, lines, scanned: !requireCollectScan,
       created_at: new Date().toISOString(),
     });
   }
@@ -418,7 +418,10 @@ export function createServer(config) {
             }
           }
         }
-        const collected = { ...order, state: "collect", collectAt: Date.now(), collection_point };
+        const collected = {
+          ...order, state: "collect", collectAt: Date.now(), collection_point,
+          scanned: !config.requireCollectScan
+        };
         orderState.set(ref, collected);
         collectedRefs.add(ref);
         logCollect(config, collected);
@@ -603,7 +606,7 @@ if (isMain) {
     for (const order of mockOrders()) {
       transitionOrder(String(order.transaction_id), order);
     }
-    seedMockCollect();
+    seedMockCollect(config.requireCollectScan);
     console.log("Mock mode: pre-loaded sample orders.");
   } else {
     const missing = validateRuntimeConfig(config);
