@@ -37,6 +37,11 @@ let payClearTimer = null;
 const payClients = new Set();
 const PAY_IDLE_MS = 30_000;
 
+// "Present ID" is a short prompt for staff to glance at — it shouldn't sit
+// on screen anywhere near as long as messages meant for the customer to read.
+const PAY_ID_CHECK_MESSAGES = new Set(["PRESENT 'EMPLOYEE' ID", "PRESENT ID"]);
+const PAY_ID_CHECK_IDLE_MS = 10_000;
+
 // OMS-wide maintenance — affects all screens including OMS displays.
 // Kiosk-only maintenance — affects kiosks/badge only; OMS displays stay live for order collection.
 let maintenanceMode = false;
@@ -126,10 +131,11 @@ function setPayMessage(msg) {
   clearTimeout(payClearTimer);
   payClearTimer = null;
   if (payMessage !== PAY_DEFAULT) {
+    const idleMs = PAY_ID_CHECK_MESSAGES.has(payMessage) ? PAY_ID_CHECK_IDLE_MS : PAY_IDLE_MS;
     payClearTimer = setTimeout(() => {
       payMessage = PAY_DEFAULT;
       broadcastPayMessage();
-    }, PAY_IDLE_MS);
+    }, idleMs);
   }
   broadcastPayMessage();
 }
