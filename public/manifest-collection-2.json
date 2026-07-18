@@ -1,0 +1,14 @@
+{
+  "name": "Collection Point 2",
+  "short_name": "Collect 2",
+  "id": "/collection/2",
+  "start_url": "/collection/2",
+  "scope": "/collection/2",
+  "display": "standalone",
+  "background_color": "#000F00",
+  "theme_color": "#000F00",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

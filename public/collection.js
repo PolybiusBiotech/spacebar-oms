@@ -8,6 +8,8 @@ if (!collectionPoint) {
 } else {
   cpNumberEl.textContent = collectionPoint;
   document.title = `Collection Point ${collectionPoint} — Space Bar`;
+  const manifestLink = document.getElementById("manifest-link");
+  if (manifestLink) manifestLink.href = `/manifest-collection-${collectionPoint}.json`;
 }
 
 let currentOrderRef = null;

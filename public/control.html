@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Payment Control — Polybius Space Bar</title>
+  <link rel="manifest" href="/manifest-control.json">
+  <meta name="theme-color" content="#000F00">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Control">
+  <link rel="apple-touch-icon" href="/icons/icon-180.png">
   <link rel="stylesheet" href="/styles.css">
   <style>
     body { padding: 1rem 1.25rem; }
@@ -382,14 +388,6 @@
         CREDENTIAL DENIED
         <span class="preset-plain-hint">×2 → REFUSED</span>
       </button>
-      <button class="preset" data-lore-msg="VERIFICATION APPROVED|TRANSACT BELOW" data-plain-msg="APPROVED|PAY BELOW">
-        APPROVED<br>TRANSACT BELOW
-        <span class="preset-plain-hint">×2 → APPROVED — PAY BELOW</span>
-      </button>
-      <button class="preset" data-lore-msg="CREDIT TRANSFER COMPLETE" data-plain-msg="PAYMENT PROCESSED">
-        CREDIT TRANSFER COMPLETE
-        <span class="preset-plain-hint">×2 → PAYMENT PROCESSED</span>
-      </button>
       <button class="preset" data-lore-msg="STAND BY, WORKER" data-plain-msg="PLEASE WAIT">
         STAND BY, WORKER
         <span class="preset-plain-hint">×2 → PLEASE WAIT</span>
@@ -397,6 +395,15 @@
       <button class="preset" data-lore-msg="NEXT WORKER" data-plain-msg="NEXT CUSTOMER">
         NEXT WORKER
         <span class="preset-plain-hint">×2 → NEXT CUSTOMER</span>
+      </button>
+      <button class="preset" data-lore-msg="SCAN AGAIN" data-plain-msg="SCAN AGAIN">
+        SCAN AGAIN
+      </button>
+      <button class="preset" data-lore-msg="SCAN FURTHER AWAY" data-plain-msg="SCAN FURTHER AWAY">
+        SCAN FURTHER AWAY
+      </button>
+      <button class="preset" data-lore-msg="LOOK AT CAMERA" data-plain-msg="LOOK AT CAMERA">
+        LOOK AT CAMERA
       </button>
     </div>
 
@@ -426,5 +433,6 @@
   </div>
 
   <script src="/control.js"></script>
+  <script src="/pwa.js" defer></script>
 </body>
 </html>

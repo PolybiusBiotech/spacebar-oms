@@ -63,10 +63,11 @@ const RECONNECT_MAX  = 30_000;
 const PLAIN_MESSAGES = new Set([
   "PRESENT ID",
   "REFUSED",
-  "APPROVED\nPAY BELOW",
-  "PAYMENT PROCESSED",
   "PLEASE WAIT",
   "NEXT CUSTOMER",
+  "SCAN AGAIN",
+  "SCAN FURTHER AWAY",
+  "LOOK AT CAMERA",
 ]);
 
 function escapeHtml(str) {
@@ -76,7 +77,7 @@ function escapeHtml(str) {
 // Render message as HTML — maps PAY HERE to lore text, wraps quoted words so
 // the content stays corporate but the quote marks look spray-painted on.
 function renderMessageHtml(msg) {
-  if (!msg || msg === "PAY HERE") return "INSERT PAYMENT CREDIT HERE";
+  if (!msg || msg === "PAY HERE") return "PAYMENT NODE";
   const safe = escapeHtml(msg);
   return safe
     .replace(/\n/g, '<br>')
@@ -91,7 +92,9 @@ function applyMessage(msg) {
   messageEl.innerHTML = renderMessageHtml(msg);
   messageEl.className = isDefault ? "pay-here" : "";
 
-  subtitleEl.textContent = isDefault ? "Present order slip" : "";
+  subtitleEl.innerHTML = isDefault
+    ? 'Scan order slip below<br><span class="subtitle-hint">(150+ mm away works best)</span>'
+    : "";
   subtitleEl.classList.remove("soft-only");
   subtitleEl.classList.toggle("visible", isDefault);
 
